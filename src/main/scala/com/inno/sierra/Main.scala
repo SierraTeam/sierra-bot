@@ -1,11 +1,8 @@
-package com.inno.sierra;
+package com.inno.sierra
 
 object Main {
 
-    def main(args: Array[String]) {
-
-        SafeBot.run()
-
-    }
-
+  def main(args: Array[String]) {
+    SafeBot.run()
+  }
 }
