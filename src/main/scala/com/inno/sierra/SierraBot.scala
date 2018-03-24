@@ -6,7 +6,7 @@ import info.mukel.telegrambot4s.api.declarative.{Commands, InlineQueries}
 import info.mukel.telegrambot4s.methods.{ParseMode, SendMessage}
 import info.mukel.telegrambot4s.models._
 
-object SafeBot extends TelegramBot with Polling with Commands {
+object SierraBot extends TelegramBot with Polling with Commands {
 
   // Use 'def' or 'lazy val' for the token, using a plain 'val' may/will
   // lead to initialization order issues.
