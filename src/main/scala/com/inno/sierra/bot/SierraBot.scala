@@ -1,10 +1,11 @@
-package com.inno.sierra
+package com.inno.sierra.bot
+
+import info.mukel.telegrambot4s.api._
+import info.mukel.telegrambot4s.api.declarative.Commands
+import info.mukel.telegrambot4s.methods.SendMessage
+import info.mukel.telegrambot4s.models._
 
 import scala.io.Source
-import info.mukel.telegrambot4s.api._
-import info.mukel.telegrambot4s.api.declarative.{Commands, InlineQueries}
-import info.mukel.telegrambot4s.methods.{ParseMode, SendMessage}
-import info.mukel.telegrambot4s.models._
 
 object SierraBot extends TelegramBot with Polling with Commands {
 
