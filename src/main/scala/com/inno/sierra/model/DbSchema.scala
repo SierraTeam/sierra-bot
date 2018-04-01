@@ -42,9 +42,6 @@ object DbSchema extends Schema {
     e.duration is dbType("bigint")
   ))
 
-
-  DbSchema.init()
-
   // -----Methods
   def insert(s: ChatSession): ChatSession = {
     transaction {
