@@ -1,4 +1,4 @@
-package com.inno.sierra.tests
+package com.inno.sierra.model
 
 import org.slf4j.LoggerFactory
 import org.squeryl.PrimitiveTypeMode._
