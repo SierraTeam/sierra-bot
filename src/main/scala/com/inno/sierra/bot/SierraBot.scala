@@ -9,16 +9,19 @@ import info.mukel.telegrambot4s.methods.SendMessage
 import info.mukel.telegrambot4s.models._
 import java.util.Calendar
 
-import scala.io.Source
+import com.typesafe.config.ConfigFactory
+
 
 object SierraBot extends TelegramBot with Polling with Commands {
 
   // Use 'def' or 'lazy val' for the token, using a plain 'val' may/will
   // lead to initialization order issues.
   // Fetch the token from an environment variable or untracked file.
-  lazy val token = scala.util.Properties
-    .envOrNone("BOT_TOKEN")
-    .getOrElse(Source.fromFile("bot.token").getLines().mkString)
+//  lazy val token = scala.util.Properties
+//    .envOrNone("BOT_TOKEN")
+//    .getOrElse(Source.fromFile("bot.token").getLines().mkString)
+  lazy val token = ConfigFactory.load().getString("bot.token")
+
 
   val event = Event
 

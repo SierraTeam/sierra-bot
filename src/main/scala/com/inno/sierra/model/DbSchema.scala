@@ -1,5 +1,6 @@
 package com.inno.sierra.model
 
+import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 import org.squeryl.PrimitiveTypeMode._
 import org.squeryl.adapters.H2Adapter
@@ -9,6 +10,7 @@ import scala.collection.mutable
 import scala.collection.mutable.Set
 
 object DbSchema extends Schema {
+  private val conf = ConfigFactory.load()
   // -----Initialize a connection with DB
   //val logger = LoggerFactory.getLogger(getClass)
   val dbConnection = "jdbc:h2:~/sierrabot"
@@ -19,7 +21,7 @@ object DbSchema extends Schema {
   SessionFactory.concreteFactory = Some(() =>
     Session.create(
       java.sql.DriverManager.getConnection(
-        dbConnection, dbUsername, dbPassword),
+        conf.getString("db.connection"), conf.getString("db.username"), conf.getString("db.password")),
       new H2Adapter)
   )
 
