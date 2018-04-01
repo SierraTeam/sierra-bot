@@ -1,9 +1,13 @@
 package com.inno.sierra.bot
 
+import java.util.Date
+
+import com.inno.sierra.model.Event
 import info.mukel.telegrambot4s.api._
 import info.mukel.telegrambot4s.api.declarative.Commands
 import info.mukel.telegrambot4s.methods.SendMessage
 import info.mukel.telegrambot4s.models._
+import java.util.Calendar
 
 import scala.io.Source
 
@@ -16,6 +20,8 @@ object SierraBot extends TelegramBot with Polling with Commands {
     .envOrNone("BOT_TOKEN")
     .getOrElse(Source.fromFile("bot.token").getLines().mkString)
 
+  val event = Event
+
   /**
     * COMMAND /start
     *
@@ -23,6 +29,15 @@ object SierraBot extends TelegramBot with Polling with Commands {
     */
   onCommand("/start") {
     implicit msg => reply("Description of bot. Description of commands.")
+  }
+
+  onCommand("/keepinmind") {
+
+    val today = Calendar.getInstance().getTime()
+    var taskName : String = "midterm"
+    Event(1,today,taskName,60);
+
+    implicit msg => reply("Create task "+taskName+" successfull")
   }
 
   // TODO: Remove, just an example
