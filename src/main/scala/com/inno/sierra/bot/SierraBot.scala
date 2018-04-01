@@ -21,8 +21,11 @@ object SierraBot extends TelegramBot with Polling with Commands {
     *
     * Present the bot.
     */
-  onCommand("/start") { implicit msg => reply("Description of bot. Description of commands.") }
+  onCommand("/start") {
+    implicit msg => reply("Description of bot. Description of commands.")
+  }
 
+  // TODO: Remove, just an example
   /**
     * COMMAND /coin
     * COMMAND /flip
@@ -30,7 +33,9 @@ object SierraBot extends TelegramBot with Polling with Commands {
     * Flip a coin.
     */
   val rng = new scala.util.Random(System.currentTimeMillis())
-  onCommand("coin", "flip") { implicit msg => reply(if (rng.nextBoolean()) "Head!" else "Tail!") }
+  onCommand("coin", "flip") {
+    implicit msg => reply(if (rng.nextBoolean()) "Head!" else "Tail!")
+  }
 
   /**
     * MESSAGE <any>

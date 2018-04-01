@@ -13,6 +13,7 @@ object DbSchema extends Schema {
   val dbPassword = ""
 
   val chatSessions = table[ChatSession]
+
   Class.forName("org.h2.Driver")
 
   SessionFactory.concreteFactory = Some(() =>
