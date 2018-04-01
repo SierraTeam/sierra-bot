@@ -99,7 +99,7 @@ object DbSchema extends Schema {
     }
   }
 
-  def init(): Unit = {
+  def init(): String = {
     // Recreate DB
     transaction {
       Session.cleanupResources
@@ -118,5 +118,6 @@ object DbSchema extends Schema {
     Event.create(0, new Date(), "meeting", 60)
 
     println(ChatSession.get(None))
+    ChatSession.get(None).toString()
   }
 }

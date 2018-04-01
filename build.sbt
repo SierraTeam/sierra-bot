@@ -14,5 +14,6 @@ libraryDependencies ++= Seq(
   "com.h2database" % "h2" % "1.4.196",
   "org.scalactic" %% "scalactic" % "3.0.5",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test",
-  "com.typesafe" % "config" % "1.3.2"
+  "com.typesafe" % "config" % "1.3.2",
+  "org.scalamock" %% "scalamock" % "4.1.0" % Test
 )
