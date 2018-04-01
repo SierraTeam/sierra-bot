@@ -18,4 +18,9 @@ object Event {
 
     DbSchema.insert(new Event(id, time, name, duration))
   }
+
+  def assignEventTo(eventId: Long, chatSessionId: Long): Unit = {
+    val cse = new ChatSessionEvents(eventId, chatSessionId)
+    DbSchema.insert(cse)
+  }
 }

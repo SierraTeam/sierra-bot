@@ -69,3 +69,8 @@ jrebel.lic
 /.lib/
 
 /bot.token
+
+application.conf
+
+*.log
+BOT_TOKEN

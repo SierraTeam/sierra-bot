@@ -8,7 +8,7 @@ object Main {
   def main(args: Array[String]) {
     // TODO: delete before production
     DbSchema.init()
-    
+
     SierraBot.run()
   }
 }
