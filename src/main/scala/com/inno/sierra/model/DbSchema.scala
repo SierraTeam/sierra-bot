@@ -12,15 +12,14 @@ object DbSchema extends Schema {
   private val conf = ConfigFactory.load()
   // -----Initialize a connection with DB
   //val logger = LoggerFactory.getLogger(getClass)
-  val dbConnection = "jdbc:h2:~/sierrabot"
-  val dbUsername = "sa"
-  val dbPassword = ""
 
   Class.forName("org.h2.Driver")
   SessionFactory.concreteFactory = Some(() =>
     Session.create(
       java.sql.DriverManager.getConnection(
-        conf.getString("db.connection"), conf.getString("db.username"), conf.getString("db.password")),
+        conf.getString("db.connection"),
+        conf.getString("db.username"),
+        conf.getString("db.password")),
       new H2Adapter)
   )
 
