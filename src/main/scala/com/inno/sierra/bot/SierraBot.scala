@@ -42,6 +42,11 @@ object SierraBot extends TelegramBot with Polling with Commands {
 
     implicit msg => reply("Create task "+taskName+" successfull")
   }
+  
+  onCommand("/info") {
+    implicit msg => reply("Telegram bot created with Scala. This bot is a simple scheduler. Notification of your" +
+      "appointments.")
+  }
 
   // TODO: Remove, just an example
   /**
