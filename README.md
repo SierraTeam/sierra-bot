@@ -9,6 +9,14 @@ A telegram bot to manage schedule:
 
 ## Build & Run ##
 
+Make a copy of reference settings and then configure application.conf for your needs:
+
+```sh
+cp ./src/main/resources/reference.conf ./src/main/resources/application.conf
+```
+
+To run the bot use sbt:
+
 ```sh
 $ cd sierra-bot
 $ sbt
