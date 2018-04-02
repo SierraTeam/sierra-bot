@@ -12,7 +12,7 @@ import java.util.Calendar
 import com.typesafe.config.ConfigFactory
 import info.mukel.telegrambot4s.api.BotBase
 
-object SierraBot extends TelegramBot with Polling with Commands {
+abstract class SierraBot extends TelegramBot with Commands {
 
   // Use 'def' or 'lazy val' for the token, using a plain 'val' may/will
   // lead to initialization order issues.

@@ -24,6 +24,26 @@ $ sbt
 > run
 ```
 
+## Deploy on Heroku ##
+
+First set up some config vars in Heroku, they will be passed as environment variables to the bot:
+```
+BOT_POLLING=false
+BOT_TOKEN=<token>
+BOT_WEBHOOKURL=<https_heroku_app_url>
+DB_CONNECTION=jdbc:<jdbc_connection>
+DB_USERNAME=sa
+DB_PASSWORD=
+```
+
+To deploy use `sbt stage deployHeroku` or in more detailed:
+```sh
+$ cd sierra-bot
+$ sbt
+> stage
+> deployHeroku
+```
+
 ## Test (TODO) ##
 
 To run tests:

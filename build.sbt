@@ -6,6 +6,8 @@ version := "0.1"
 
 scalaVersion := "2.12.4"
 
+herokuAppName in Compile := "innosierrabot"
+
 resolvers += Classpaths.typesafeReleases
 
 libraryDependencies ++= Seq(
@@ -17,3 +19,5 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.3.2",
   "org.scalamock" %% "scalamock" % "4.1.0" % Test
 )
+
+enablePlugins(JavaAppPackaging)
