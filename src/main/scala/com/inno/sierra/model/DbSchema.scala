@@ -141,5 +141,6 @@ object DbSchema extends Schema {
 
     println(ChatSession.get(None))
     println(Event.get(None))
+    
   }
 }
