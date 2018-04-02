@@ -5,9 +5,11 @@ import java.util.Date
 import com.inno.sierra.model.Event
 import info.mukel.telegrambot4s.api._
 import info.mukel.telegrambot4s.api.declarative.Commands
-import info.mukel.telegrambot4s.methods.SendMessage
+import info.mukel.telegrambot4s.methods.{ParseMode, SendMessage}
 import info.mukel.telegrambot4s.models._
 import java.util.Calendar
+
+import info.mukel.telegrambot4s.methods.ParseMode.ParseMode
 
 import scala.io.Source
 
@@ -40,9 +42,18 @@ object SierraBot extends TelegramBot with Polling with Commands {
     implicit msg => reply("Create task "+taskName+" successfull")
   }
 
+  onCommand("/info") {
+    implicit msg => reply("Telegram bot created with Scala. This bot is a simple Assistant that provides " +
+      "the following functionality:\n" +
+      "/start: Starts this bot.\n" +
+      "/keepinmind: Creates an Event to Keep in Mind.\n" +
+      "/info:  Displays description (this text).\n" +
+      "/exit:  TODO.\n")
+  }
+
   // TODO: Remove, just an example
   /**
-    * COMMAND /coin
+    * COMMAND /coinOak
     * COMMAND /flip
     *
     * Flip a coin.

@@ -69,3 +69,4 @@ jrebel.lic
 /.lib/
 
 /bot.token
+*.log
