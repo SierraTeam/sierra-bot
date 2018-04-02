@@ -38,9 +38,19 @@ object SierraBot extends TelegramBot with Polling with Commands {
 
     val today = Calendar.getInstance().getTime()
     var taskName : String = "midterm"
-    Event.create(1,today,taskName,60);
+    Event.create(2,today,taskName,30);
 
-    implicit msg => reply("Create task "+taskName+" successfull")
+    implicit msg =>  withArgs {
+      args =>
+
+        for (name <- args){
+          reply(name)
+        }
+       // nameValuePairs: Array[java.lang.String] = Array(oauth_token=FOO, oauth_token_secret=BAR, oauth_expires_in=3600)
+
+    }
+
+      //reply("Create task "+taskName+" successfull")
   }
   
   onCommand("/info") {
