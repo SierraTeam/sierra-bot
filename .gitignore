@@ -70,7 +70,7 @@ jrebel.lic
 
 /bot.token
 
-application.conf
+/src/main/resources/application.conf
 
 *.log
 BOT_TOKEN

@@ -99,7 +99,27 @@ object DbSchema extends Schema {
     }
   }
 
-  def init(): String = {
+  def getAllEvents(ids: Option[mutable.Set[Long]]): mutable.Set[Event] = {
+    val result = mutable.Set[Event]()
+
+    if (ids.isEmpty) {
+      transaction {
+        from(events)(e => select(e))
+          .foreach(e => result += e)
+        result
+      }
+    } else {
+      transaction {
+        ids.get.foreach(id => {
+          from(events)(e => where(e.id === id).select(e))
+            .foreach(e => result += e)
+        })
+        result
+      }
+    }
+  }
+
+  def init(): Unit = {
     // Recreate DB
     transaction {
       Session.cleanupResources
@@ -115,9 +135,12 @@ object DbSchema extends Schema {
     ChatSession.create(0, 104, "julioreis22", ChatState.Start)
     ChatSession.create(0, 105, "martincfx", ChatState.Start)
 
-    Event.create(0, new Date(), "meeting", 60)
+    val e = Event.create(0, new Date(), "meeting", 60)
+    Event.assignEventTo(e.id, 1)
+    Event.assignEventTo(e.id, 2)
 
     println(ChatSession.get(None))
-    ChatSession.get(None).toString()
+    println(Event.get(None))
+    
   }
 }
