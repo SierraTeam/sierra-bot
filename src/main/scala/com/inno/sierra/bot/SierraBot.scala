@@ -44,9 +44,13 @@ abstract class SierraBot extends TelegramBot with Commands {
     implicit msg => reply("Create task "+taskName+" successfull")
   }
   
-  onCommand("/info") {
-    implicit msg => reply("Telegram bot created with Scala. This bot is a simple scheduler. Notification of your" +
-      "appointments.")
+   onCommand("/info") {
+    implicit msg => reply("Telegram bot created with Scala. This bot is a simple Assistant that provides " +
+      "the following functionality:\n" +
+      "/start: Starts this bot.\n" +
+      "/keepinmind: Creates an Event to Keep in Mind.\n" +
+      "/info:  Displays description (this text).\n" +
+      "/exit:  TODO.\n")
   }
 
   // TODO: Remove later, it's for test of notifications
