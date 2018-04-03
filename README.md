@@ -36,7 +36,7 @@ DB_USERNAME=sa
 DB_PASSWORD=
 ```
 
-To deploy use `sbt stage deployHeroku` or in more detailed:
+To deploy from local machine use `sbt stage deployHeroku` or in more detailed:
 ```sh
 $ cd sierra-bot
 $ sbt
