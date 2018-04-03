@@ -2,7 +2,7 @@ package com.inno.sierra.bot
 
 import java.util.Date
 
-import com.inno.sierra.model.{DbSchema, Event}
+import com.inno.sierra.model.{ChatSession, ChatState, DbSchema, Event}
 import info.mukel.telegrambot4s.api._
 import info.mukel.telegrambot4s.api.declarative.Commands
 import info.mukel.telegrambot4s.methods.SendMessage
@@ -27,12 +27,21 @@ abstract class SierraBot extends TelegramBot with Commands {
 
   /**
     * COMMAND /start
-    *
     * Present the bot.
     */
-  onCommand("/start") {
-    // TODO: get the user
-    implicit msg => reply("Description of bot. Description of commands.")
+  onCommand("/start") {implicit msg =>
+    {
+      val user = msg.from.get
+      val chat = msg.chat
+      if (!ChatSession.exists(chat.id)) {
+        ChatSession.create(
+          chat.id, user.username.get, ChatState.Start)
+        reply("Nice to meet you, " + user.firstName + "! I can help" +
+          " you to plan your activities. I'll try to be useful for you :)")
+      } else {
+        reply("Welcome back, " + user.firstName + "! I'm glad to see you again :)")
+      }
+    }
   }
 
   onCommand("/keepinmind") {
