@@ -10,10 +10,16 @@ import info.mukel.telegrambot4s.api.declarative.Commands
 import info.mukel.telegrambot4s.methods.SendMessage
 import info.mukel.telegrambot4s.models._
 import java.util.Calendar
+
+import akka.actor.Cancellable
+
+import scala.concurrent.duration._
 import java.time.format.DateTimeFormatter
 
 import com.typesafe.config.ConfigFactory
 import info.mukel.telegrambot4s.api.BotBase
+
+import scala.concurrent.Future
 
 abstract class SierraBot extends TelegramBot with Commands {
   val botName = "@sierraTest1bot"
@@ -26,6 +32,8 @@ abstract class SierraBot extends TelegramBot with Commands {
 //    .getOrElse(Source.fromFile("bot.token").getLines().mkString)
   lazy val token = ConfigFactory.load().getString("bot.token")
 
+  val NUM_OF_THREADS = 10
+  var notifier: Cancellable = _
 
   onCommand("/start") {
     implicit msg => reply(start(msg))
@@ -62,7 +70,7 @@ abstract class SierraBot extends TelegramBot with Commands {
           var  simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
           var  date:Date = simpleDateFormat.parse(date_meeting);
 
-          Event.create(2,date,parametro(2),parametro(3).toInt);
+//          Event.create(2,date,parametro(2),parametro(3));
           reply("Create task "+parametro(2)+" successfull")
           for (name <- args){
          //   reply(name)
@@ -84,23 +92,37 @@ abstract class SierraBot extends TelegramBot with Commands {
     */
   override def receiveMessage(message: Message): Unit = {
     for (text <- message.text) {
-      if (text.startsWith(botName)) {
-        if (text.contains("/info")){
-          request(SendMessage(message.source, info))
-        } else if (text.contains("/start")) {
-          request(SendMessage(message.source, start(message)))
-        } else {
-          request(SendMessage(message.source, "I'm sorry, it seems I can't understand you -_- " +
-            "Let me explain what I can do"))
-          request(SendMessage(message.source, info))
+      // If there is a group chat
+      if (message.chat.username.isEmpty) {
+        if (text.startsWith(botName)) {
+          if (text.contains("/info")){
+            request(SendMessage(message.source, info))
+          } else if (text.contains("/start")) {
+            request(SendMessage(message.source, start(message)))
+          } else {
+            request(SendMessage(message.source, "I'm sorry, it seems I can't understand you -_- " +
+              "Let me explain what I can do"))
+            request(SendMessage(message.source, info))
+          }
         }
+      } else {
+        super.receiveMessage(message)
       }
+
     }
   }
 
   override def run(): Unit = {
     super.run()
-    new Thread(new NotifierService(10)).run()
+    val ns = new NotifierService(NUM_OF_THREADS)
+    notifier = system.scheduler.schedule(0 seconds, 10 seconds){
+      ns.sendMessages()
+    }
+  }
+
+  override def shutdown(): Future[Unit] = {
+    notifier.cancel()
+    super.shutdown()
   }
 
 
