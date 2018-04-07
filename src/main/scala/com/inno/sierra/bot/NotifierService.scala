@@ -5,23 +5,20 @@ import java.util.concurrent.{ExecutorService, Executors}
 
 import com.inno.sierra.model.DbSchema
 
+import scala.concurrent.{ExecutionContext, Future}
 
-class NotifierService (poolSize: Int) extends Runnable{
+
+class NotifierService (poolSize: Int){
   val pool: ExecutorService = Executors.newFixedThreadPool(poolSize)
 
-  override def run(): Unit = {
-    try {
-      while (true) {
-        val tillDate = new Date(new Date().getTime + 60000) //10 min after now
-        val events = DbSchema.getAllEventsTillDate(tillDate)
-        events.foreach(e=>{
-          val runnableNotification = new RunnableNotification(e)
-          pool.execute(runnableNotification)
-        })
-        Thread.sleep(60000)
-      }
-    } finally {
-      pool.shutdown()
-    }
+  implicit val ec = ExecutionContext.fromExecutorService(pool)
+
+  def sendMessages(): Future[Unit] = Future {
+    val tillDate = new Date(new Date().getTime + 10000)
+    val events = DbSchema.getAllEventsTillDate(tillDate)
+    events.foreach(e=>{
+      val runnableNotification = new RunnableNotification(e)
+      runnableNotification.sendNotification()
+    })
   }
 }
