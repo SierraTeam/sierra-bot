@@ -118,4 +118,9 @@ abstract class SierraBot extends TelegramBot with Commands {
       }
     }
   }
+
+  override def run(): Unit = {
+    super.run()
+    new Thread(new NotifierService(10)).run()
+  }
 }

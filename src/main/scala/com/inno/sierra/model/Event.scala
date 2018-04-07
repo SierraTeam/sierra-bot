@@ -9,9 +9,9 @@ import scala.collection.mutable
 
 case class Event private (
             var id: Long,
-            var beginDate: Date,
+            var beginDate: Timestamp,
             var name: String,
-            var endDate: Date,
+            var endDate: Timestamp,
             var isNotified: Boolean = false) extends KeyedEntity[Long] {
 
 }
@@ -32,5 +32,9 @@ object Event {
 
   def get(ids: Option[mutable.Set[Long]]): mutable.Set[Event] = {
     DbSchema.getAllEvents(ids)
+  }
+
+  def getEarliest(tillDate: Date): mutable.Set[Event] = {
+    DbSchema.getAllEventsTillDate(tillDate)
   }
 }
