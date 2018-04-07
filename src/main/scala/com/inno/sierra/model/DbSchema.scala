@@ -39,9 +39,9 @@ object DbSchema extends Schema {
   ))
 
   on(events)(e => declare(
-    e.beginDate is indexed,
+    e.beginDate is (indexed, dbType("timestamp")),
     e.name is indexed,
-    e.endDate is indexed
+    e.endDate is (indexed, dbType("timestamp"))
   ))
 
   // -----Methods
@@ -129,12 +129,28 @@ object DbSchema extends Schema {
     }
   }
 
+  def getAllEventsTillDate(date: Date): mutable.Set[Event] = {
+    val result = mutable.Set[Event]()
+
+    transaction {
+      from(events)(e => select(e))
+        .foreach(e => {
+          if (e.beginDate.before(date)) {
+            result += e
+          }
+        })
+      result
+    }
+  }
+
   def init(): Unit = {
     // Recreate DB
     transaction {
       Session.cleanupResources
       DbSchema.drop
       DbSchema.create
+      //test values for notifications
+      Event.create(3, new Date((new Date()).getTime + 180000), "Test delayed", new Date((new Date()).getTime + 240000))
     }
 
     println("db is initialized")
