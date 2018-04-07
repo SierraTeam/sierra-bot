@@ -19,6 +19,8 @@ import java.time.format.DateTimeFormatter
 import com.typesafe.config.ConfigFactory
 import info.mukel.telegrambot4s.api.BotBase
 
+import scala.concurrent.Future
+
 abstract class SierraBot extends TelegramBot with Commands {
   val botName = "@sierraTest1bot"
 
@@ -68,7 +70,7 @@ abstract class SierraBot extends TelegramBot with Commands {
           var  simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
           var  date:Date = simpleDateFormat.parse(date_meeting);
 
-          Event.create(2,date,parametro(2),parametro(3).toInt);
+//          Event.create(2,date,parametro(2),parametro(3));
           reply("Create task "+parametro(2)+" successfull")
           for (name <- args){
          //   reply(name)
@@ -110,7 +112,7 @@ abstract class SierraBot extends TelegramBot with Commands {
     }
   }
 
-/*  override def run(): Unit = {
+  override def run(): Unit = {
     super.run()
     val ns = new NotifierService(NUM_OF_THREADS)
     notifier = system.scheduler.schedule(0 seconds, 10 seconds){
@@ -122,7 +124,6 @@ abstract class SierraBot extends TelegramBot with Commands {
     notifier.cancel()
     super.shutdown()
   }
- */
 
 
   def start(msg: Message): String = {
