@@ -1,5 +1,8 @@
 package com.inno.sierra.model
 
+import java.sql.Timestamp
+import java.util.Date
+
 import org.squeryl.KeyedEntity
 import org.squeryl.PrimitiveTypeMode._
 
@@ -54,5 +57,11 @@ object ChatSession {
 
   def exists(id: Long): Boolean = {
     DbSchema.existsChatSession(id)
+  }
+
+  def hasIntersections(csid: Long, beginDate: Date, endDate: Date) = {
+    val begin = new Timestamp(beginDate.getTime)
+    val end = new Timestamp(endDate.getTime)
+    DbSchema.hasIntersactions(csid, begin, end)
   }
 }
