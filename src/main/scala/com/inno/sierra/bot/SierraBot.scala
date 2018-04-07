@@ -1,5 +1,7 @@
 package com.inno.sierra.bot
 
+import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Date
 
 import com.inno.sierra.model.{ChatSession, ChatState, DbSchema, Event}
@@ -12,10 +14,10 @@ import java.util.Calendar
 import akka.actor.Cancellable
 
 import scala.concurrent.duration._
+import java.time.format.DateTimeFormatter
+
 import com.typesafe.config.ConfigFactory
 import info.mukel.telegrambot4s.api.BotBase
-
-import scala.concurrent.{ExecutionContext, Future}
 
 abstract class SierraBot extends TelegramBot with Commands {
   val botName = "@sierraTest1bot"
@@ -38,23 +40,44 @@ abstract class SierraBot extends TelegramBot with Commands {
   onCommand("/keepinmind") {
     val today = Calendar.getInstance().getTime()
     var taskName : String = "midterm"
-    Event.create(2,today,taskName,today)
+
+    var  i:Int  =0;
 
     implicit msg =>  withArgs {
 
       args =>  //doubleMatch(1,20170101,args.mkString(" "),37);
-                  print(args);
+      //            print(args);
         //reply(args.mkString(" "))
+        val parametro =  Array("","","","")
+        var indice = 0;
+        var size =0;
+        for (arg <- args){ println(arg)
+          parametro(indice) = arg;
+          if(arg !=""){
+            size+= 1;
+          }
+          indice+= 1;
+        }
 
+        if(size != 4){
+          reply("Create a meeting requires 4 parameters date, hour, name and duration(min)")
+        }else{
 
-   //     for (name <- args){
-    //      reply(name)
-    //    }
-       // nameValuePairs: Array[java.lang.String] = Array(oauth_token=FOO, oauth_token_secret=BAR, oauth_expires_in=3600)
+          var date_meeting = parametro(0).concat(" ").concat(parametro(1))
+          val format = new java.text.SimpleDateFormat("yyyy-MM-dd")
+          var  simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+          var  date:Date = simpleDateFormat.parse(date_meeting);
 
+          Event.create(2,date,parametro(2),parametro(3).toInt);
+          reply("Create task "+parametro(2)+" successfull")
+          for (name <- args){
+         //   reply(name)
+          }
+
+        }
     }
 
-      //reply("Create task "+taskName+" successfull")
+      //
   }
 
    onCommand("/info") {
