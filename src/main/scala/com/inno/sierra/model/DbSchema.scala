@@ -1,10 +1,13 @@
 package com.inno.sierra.model
 
+import java.sql.Timestamp
+
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 import org.squeryl.PrimitiveTypeMode._
 import org.squeryl.adapters.{H2Adapter, PostgreSqlAdapter}
 import org.squeryl.{Schema, Session, SessionFactory}
+
 import scala.collection.mutable
 import java.util.Date
 
@@ -165,6 +168,17 @@ object DbSchema extends Schema {
     }
   }
 
+  def hasIntersactions(csid: Long, begin: Timestamp, end: Timestamp) = {
+    val result = transaction {
+      from(csEvents, events)((cse, e) =>
+        where(cse.chatSessionId === csid)
+          .select(e)
+      )
+    }
+    println(result)
+    !result.isEmpty
+  }
+
   def init(): Unit = {
     // Recreate DB
     transaction {
@@ -172,7 +186,8 @@ object DbSchema extends Schema {
       DbSchema.drop
       DbSchema.create
     }
-    Event.create(3, new Date((new Date()).getTime + 30000), "Test delayed", new Date((new Date()).getTime + 60000))
+    //test values for notifications
+    Event.create(3, new Date((new Date()).getTime + 180000), "Test delayed", new Date((new Date()).getTime + 240000))
     println("db is initialized")
 
     /*ChatSession.create(101, "ax_yv", ChatState.Start)
