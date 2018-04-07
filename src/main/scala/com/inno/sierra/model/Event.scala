@@ -1,23 +1,32 @@
 package com.inno.sierra.model
 
+import java.sql.Timestamp
+
 import org.squeryl.KeyedEntity
 import java.util.Date
+
 import scala.collection.mutable
 
 case class Event private (
             var id: Long,
-            var time: Date,
+            var beginDate: Timestamp,
             var name: String,
-            var duration: Long
-            ) extends KeyedEntity[Long] {
+            var endDate: Timestamp,
+            var isNotified: Boolean = false) extends KeyedEntity[Long] {
 
 }
 
 object Event {
-  def create(id: Long, time: Date,
-             name: String, duration: Long): Event = {
+  def create(id: Long, beginDate: Date,
+             name: String, endDate: Date): Event = {
 
-    DbSchema.insert(new Event(id, time, name, duration))
+    val begin = new Timestamp(beginDate.getTime())
+    val end = new Timestamp(endDate.getTime())
+    DbSchema.insert(new Event(id, begin, name, end))
+  }
+
+  def update(event: Event): Unit = {
+    DbSchema.update(event)
   }
 
   def assignEventTo(eventId: Long, chatSessionId: Long): Unit = {
@@ -27,5 +36,9 @@ object Event {
 
   def get(ids: Option[mutable.Set[Long]]): mutable.Set[Event] = {
     DbSchema.getAllEvents(ids)
+  }
+
+  def getEarliest(tillDate: Date): mutable.Set[Event] = {
+    DbSchema.getAllEventsTillDate(tillDate)
   }
 }

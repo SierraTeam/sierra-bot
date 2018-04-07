@@ -3,7 +3,7 @@ package com.inno.sierra.model
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 import org.squeryl.PrimitiveTypeMode._
-import org.squeryl.adapters.H2Adapter
+import org.squeryl.adapters.{H2Adapter, PostgreSqlAdapter}
 import org.squeryl.{Schema, Session, SessionFactory}
 import scala.collection.mutable
 import java.util.Date
@@ -13,14 +13,30 @@ object DbSchema extends Schema {
   // -----Initialize a connection with DB
   //val logger = LoggerFactory.getLogger(getClass)
 
-  Class.forName("org.h2.Driver")
+  val driver = conf.getString("db.driver")
+  val adapter = driver match {
+    case "h2" => {
+      Class.forName("org.h2.Driver")
+      new H2Adapter
+    }
+    case "postgresql" => {
+      Class.forName("org.postgresql.Driver")
+      new PostgreSqlAdapter
+    }
+    case _ => {
+      throw new NotImplementedError("Unsupported database driver")
+    }
+  }
+
   SessionFactory.concreteFactory = Some(() =>
     Session.create(
       java.sql.DriverManager.getConnection(
         conf.getString("db.connection"),
         conf.getString("db.username"),
-        conf.getString("db.password")),
-      new H2Adapter)
+        conf.getString("db.password")
+      ),
+      adapter
+    )
   )
 
 
@@ -39,9 +55,9 @@ object DbSchema extends Schema {
   ))
 
   on(events)(e => declare(
-    e.time is indexed,
+    e.beginDate is (indexed, dbType("timestamp")),
     e.name is indexed,
-    e.duration is dbType("bigint")
+    e.endDate is (indexed, dbType("timestamp"))
   ))
 
   // -----Methods
@@ -60,6 +76,12 @@ object DbSchema extends Schema {
   def insert(cse: ChatSessionEvents): ChatSessionEvents = {
     transaction {
       csEvents.insert(cse)
+    }
+  }
+
+  def update(e: Event): Unit = {
+    transaction {
+      events.update(e)
     }
   }
 
@@ -129,6 +151,20 @@ object DbSchema extends Schema {
     }
   }
 
+  def getAllEventsTillDate(date: Date, isNotified: Boolean = false): mutable.Set[Event] = {
+    val result = mutable.Set[Event]()
+
+    transaction {
+      from(events)(e => select(e))
+        .foreach(e => {
+          if (e.beginDate.before(date) && !e.isNotified) {
+            result += e
+          }
+        })
+      result
+    }
+  }
+
   def init(): Unit = {
     // Recreate DB
     transaction {
@@ -136,7 +172,7 @@ object DbSchema extends Schema {
       DbSchema.drop
       DbSchema.create
     }
-
+    Event.create(3, new Date((new Date()).getTime + 30000), "Test delayed", new Date((new Date()).getTime + 60000))
     println("db is initialized")
 
     /*ChatSession.create(101, "ax_yv", ChatState.Start)
