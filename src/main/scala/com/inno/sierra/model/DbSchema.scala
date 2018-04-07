@@ -151,13 +151,13 @@ object DbSchema extends Schema {
     }
   }
 
-  def getAllEventsTillDate(date: Date): mutable.Set[Event] = {
+  def getAllEventsTillDate(date: Date, isNotified: Boolean = false): mutable.Set[Event] = {
     val result = mutable.Set[Event]()
 
     transaction {
       from(events)(e => select(e))
         .foreach(e => {
-          if (e.beginDate.before(date)) {
+          if (e.beginDate.before(date) && !e.isNotified) {
             result += e
           }
         })
@@ -171,10 +171,8 @@ object DbSchema extends Schema {
       Session.cleanupResources
       DbSchema.drop
       DbSchema.create
-      //test values for notifications
-      Event.create(3, new Date((new Date()).getTime + 180000), "Test delayed", new Date((new Date()).getTime + 240000))
     }
-
+    Event.create(3, new Date((new Date()).getTime + 30000), "Test delayed", new Date((new Date()).getTime + 60000))
     println("db is initialized")
 
     /*ChatSession.create(101, "ax_yv", ChatState.Start)
