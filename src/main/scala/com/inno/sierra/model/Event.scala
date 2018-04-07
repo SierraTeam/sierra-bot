@@ -1,7 +1,10 @@
 package com.inno.sierra.model
 
+import java.sql.Timestamp
+
 import org.squeryl.KeyedEntity
 import java.util.Date
+
 import scala.collection.mutable
 
 case class Event private (
@@ -17,7 +20,9 @@ object Event {
   def create(id: Long, beginDate: Date,
              name: String, endDate: Date): Event = {
 
-    DbSchema.insert(new Event(id, beginDate, name, endDate))
+    val begin = new Timestamp(beginDate.getTime())
+    val end = new Timestamp(endDate.getTime())
+    DbSchema.insert(new Event(id, begin, name, end))
   }
 
   def assignEventTo(eventId: Long, chatSessionId: Long): Unit = {

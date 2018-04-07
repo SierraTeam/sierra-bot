@@ -43,6 +43,11 @@ abstract class SierraBot extends TelegramBot with Commands {
       }
     }
   }
+
+  onCommand("start") {implicit msg =>
+    reply("hi")
+  }
+
   //def doubleMatch(foo: Any, bar: Any,foo2: Any, bar2: Any) = (foo, bar,foo2,bar2) match {
    // case ('a', 'b','c',_) => "a and b"
   //  case (a:Long,b:Date,c:String,d:Long) => "oi"

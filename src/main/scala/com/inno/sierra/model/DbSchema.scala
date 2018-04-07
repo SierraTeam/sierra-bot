@@ -39,9 +39,9 @@ object DbSchema extends Schema {
   ))
 
   on(events)(e => declare(
-    e.beginDate is indexed,
+    e.beginDate is (indexed, dbType("timestamp")),
     e.name is indexed,
-    e.endDate is indexed
+    e.endDate is (indexed, dbType("timestamp"))
   ))
 
   // -----Methods
@@ -135,6 +135,8 @@ object DbSchema extends Schema {
       Session.cleanupResources
       DbSchema.drop
       DbSchema.create
+
+
     }
 
     println("db is initialized")
