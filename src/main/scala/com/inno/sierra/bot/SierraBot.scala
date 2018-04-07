@@ -84,24 +84,30 @@ abstract class SierraBot extends TelegramBot with Commands {
     */
   override def receiveMessage(message: Message): Unit = {
     for (text <- message.text) {
-      if (text.startsWith(botName)) {
-        if (text.contains("/info")){
-          request(SendMessage(message.source, info))
-        } else if (text.contains("/start")) {
-          request(SendMessage(message.source, start(message)))
-        } else {
-          request(SendMessage(message.source, "I'm sorry, it seems I can't understand you -_- " +
-            "Let me explain what I can do"))
-          request(SendMessage(message.source, info))
+      // If there is a group chat
+      if (message.chat.username.isEmpty) {
+        if (text.startsWith(botName)) {
+          if (text.contains("/info")){
+            request(SendMessage(message.source, info))
+          } else if (text.contains("/start")) {
+            request(SendMessage(message.source, start(message)))
+          } else {
+            request(SendMessage(message.source, "I'm sorry, it seems I can't understand you -_- " +
+              "Let me explain what I can do"))
+            request(SendMessage(message.source, info))
+          }
         }
+      } else {
+        super.receiveMessage(message)
       }
+
     }
   }
 
-  override def run(): Unit = {
+/*  override def run(): Unit = {
     super.run()
     new Thread(new NotifierService(10)).run()
-  }
+  }*/
 
 
   def start(msg: Message): String = {
