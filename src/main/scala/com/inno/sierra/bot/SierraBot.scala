@@ -13,6 +13,7 @@ import com.typesafe.config.ConfigFactory
 import info.mukel.telegrambot4s.api.BotBase
 
 abstract class SierraBot extends TelegramBot with Commands {
+  val botName = "@sierraTest1bot"
 
   // Use 'def' or 'lazy val' for the token, using a plain 'val' may/will
   // lead to initialization order issues.
@@ -23,34 +24,11 @@ abstract class SierraBot extends TelegramBot with Commands {
   lazy val token = ConfigFactory.load().getString("bot.token")
 
 
-  val event = Event
-
-  /**
-    * COMMAND /start
-    * Present the bot.
-    */
-  onCommand("/start") {implicit msg =>
-    {
-      val user = msg.from.get
-      val chat = msg.chat
-      if (!ChatSession.exists(chat.id)) {
-        ChatSession.create(
-          chat.id, user.username.get, ChatState.Start)
-        reply("Nice to meet you, " + user.firstName + "! I can help" +
-          " you to plan your activities. I'll try to be useful for you :)")
-      } else {
-        reply("Welcome back, " + user.firstName + "! I'm glad to see you again :)")
-      }
-    }
+  onCommand("/start") {
+    implicit msg => reply(start(msg))
   }
-  //def doubleMatch(foo: Any, bar: Any,foo2: Any, bar2: Any) = (foo, bar,foo2,bar2) match {
-   // case ('a', 'b','c',_) => "a and b"
-  //  case (a:Long,b:Date,c:String,d:Long) => "oi"
-
-  //}
 
   onCommand("/keepinmind") {
-
     val today = Calendar.getInstance().getTime()
     var taskName : String = "midterm"
     Event.create(2,today,taskName,today)
@@ -71,46 +49,58 @@ abstract class SierraBot extends TelegramBot with Commands {
 
       //reply("Create task "+taskName+" successfull")
   }
-  
+
    onCommand("/info") {
-    implicit msg => reply("Telegram bot created with Scala. This bot is a simple Assistant that provides " +
-      "the following functionality:\n" +
-      "/start: Starts this bot.\n" +
-      "/keepinmind: Creates an Event to Keep in Mind.\n" +
-      "/info:  Displays description (this text).\n" +
-      "/exit:  TODO.\n")
-  }
-
-  // TODO: Remove later, it's for test of notifications
-/*  onCommand("/test") {
-    /*request(
-      SendMessage()
-    )*/
-  }*/
-
-  // TODO: Remove, just an example
-  /**
-    * COMMAND /coin
-    * COMMAND /flip
-    * Flip a coin.
-    */
-  val rng = new scala.util.Random(System.currentTimeMillis())
-  onCommand("coin", "flip") {
-    implicit msg => reply(if (rng.nextBoolean()) "Head!" else "Tail!")
+    implicit msg => reply(info())
   }
 
   /**
-    * MESSAGE <any>
-    * Echo message back.
+    * Handling the communication within the group is implemented here.
     * @param message
     */
   override def receiveMessage(message: Message): Unit = {
     for (text <- message.text) {
-      if (text(0) != '/') {
-        request(SendMessage(message.source, message.chat.id + ": " + text.reverse))
-      } else {
-        super.receiveMessage(message)
+      if (text.startsWith(botName)) {
+        if (text.contains("/info")){
+          request(SendMessage(message.source, info))
+        } else if (text.contains("/start")) {
+          request(SendMessage(message.source, start(message)))
+        } else {
+          request(SendMessage(message.source, "I'm sorry, it seems I can't understand you -_- " +
+            "Let me explain what I can do"))
+          request(SendMessage(message.source, info))
+        }
       }
     }
+  }
+
+  override def run(): Unit = {
+    super.run()
+    new Thread(new NotifierService(10)).run()
+  }
+
+
+  def start(msg: Message): String = {
+    val user = msg.from.get
+    val chat = msg.chat
+
+    if (!ChatSession.exists(chat.id)) {
+      ChatSession.create(
+        chat.id, user.username.get, ChatState.Start)
+      "Nice to meet you, " + user.firstName + "! I can help" +
+        " you to plan your activities. I'll try to be useful for you :)"
+    } else {
+      "Welcome back, " + user.firstName + "! I'm glad to see you again :) " +
+        "How can I help you?"
+    }
+  }
+
+  def info(): String = {
+    "Telegram bot created with Scala. This bot is a simple Assistant that provides " +
+      "the following functionality:\n" +
+      "/start: Starts this bot.\n" +
+      "/keepinmind: Creates an Event to Keep in Mind.\n" +
+      "/info:  Displays description (this text).\n" +
+      "/exit:  TODO.\n"
   }
 }
