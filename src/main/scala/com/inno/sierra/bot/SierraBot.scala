@@ -8,9 +8,12 @@ import info.mukel.telegrambot4s.api.declarative.Commands
 import info.mukel.telegrambot4s.methods.SendMessage
 import info.mukel.telegrambot4s.models._
 import java.util.Calendar
+import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
 import info.mukel.telegrambot4s.api.BotBase
+
+import scala.concurrent.{ExecutionContext, Future}
 
 abstract class SierraBot extends TelegramBot with Commands {
   val botName = "@sierraTest1bot"
@@ -23,6 +26,7 @@ abstract class SierraBot extends TelegramBot with Commands {
 //    .getOrElse(Source.fromFile("bot.token").getLines().mkString)
   lazy val token = ConfigFactory.load().getString("bot.token")
 
+  val NUM_OF_THREADS = 10
 
   onCommand("/start") {
     implicit msg => reply(start(msg))
@@ -76,7 +80,10 @@ abstract class SierraBot extends TelegramBot with Commands {
 
   override def run(): Unit = {
     super.run()
-    new Thread(new NotifierService(10)).run()
+    val ns = new NotifierService(NUM_OF_THREADS)
+    system.scheduler.schedule(0 seconds, 10 seconds){
+      ns.sendMessages()
+    }
   }
 
 
