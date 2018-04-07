@@ -165,6 +165,16 @@ object DbSchema extends Schema {
     }
   }
 
+  def getChatIdEvent(eventId: Long): Long = {
+
+    transaction {
+      from(csEvents)(s => where(s.eventId === eventId).select(s)).head.chatSessionId
+    }
+
+  }
+
+
+
   def init(): Unit = {
     // Recreate DB
     transaction {
@@ -172,7 +182,7 @@ object DbSchema extends Schema {
       DbSchema.drop
       DbSchema.create
     }
-    Event.create(3, new Date((new Date()).getTime + 30000), "Test delayed", new Date((new Date()).getTime + 60000))
+    //Event.create(3, new Date((new Date()).getTime + 30000), "Test delayed", new Date((new Date()).getTime + 60000))
     println("db is initialized")
 
     /*ChatSession.create(101, "ax_yv", ChatState.Start)
