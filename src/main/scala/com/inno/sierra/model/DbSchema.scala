@@ -75,10 +75,20 @@ object DbSchema extends Schema {
     }
   }
 
+  def existsChatSession (csid: Long): Boolean = {
+    var result = mutable.Set[ChatSession]()
+
+    transaction {
+      from(chatSessions)(cs => where(cs.csid === csid).select(cs))
+        .foreach(cs => result += cs)
+      result
+    }
+    !result.isEmpty
+  }
 
   def getAllChatSessions(
                           ids: Option[mutable.Set[Long]]
-                        ): mutable.Set[ChatSession] = {
+    ): mutable.Set[ChatSession] = {
 
     val result = mutable.Set[ChatSession]()
 
@@ -129,18 +139,18 @@ object DbSchema extends Schema {
 
     println("db is initialized")
 
-    ChatSession.create(0, 101, "ax_yv", ChatState.Start)
-    ChatSession.create(0, 102, "happy_marmoset", ChatState.Start)
-    ChatSession.create(0, 103, "ilyavy", ChatState.Start)
-    ChatSession.create(0, 104, "julioreis22", ChatState.Start)
-    ChatSession.create(0, 105, "martincfx", ChatState.Start)
+    /*ChatSession.create(101, "ax_yv", ChatState.Start)
+    ChatSession.create(102, "happy_marmoset", ChatState.Start)
+    ChatSession.create(103, "ilyavy", ChatState.Start)
+    ChatSession.create(104, "julioreis22", ChatState.Start)
+    ChatSession.create(105, "martincfx", ChatState.Start)*/
 
-    val e = Event.create(0, new Date(), "meeting", 60)
+    /*val e = Event.create(0, new Date(), "meeting", 60)
     Event.assignEventTo(e.id, 1)
-    Event.assignEventTo(e.id, 2)
+    Event.assignEventTo(e.id, 2)*/
 
     println(ChatSession.get(None))
     println(Event.get(None))
-    
+
   }
 }
