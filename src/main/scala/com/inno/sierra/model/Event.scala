@@ -6,18 +6,18 @@ import scala.collection.mutable
 
 case class Event private (
             var id: Long,
-            var time: Date,
+            var beginDate: Date,
             var name: String,
-            var duration: Long
-            ) extends KeyedEntity[Long] {
+            var endDate: Date,
+            var isNotified: Boolean = false) extends KeyedEntity[Long] {
 
 }
 
 object Event {
-  def create(id: Long, time: Date,
-             name: String, duration: Long): Event = {
+  def create(id: Long, beginDate: Date,
+             name: String, endDate: Date): Event = {
 
-    DbSchema.insert(new Event(id, time, name, duration))
+    DbSchema.insert(new Event(id, beginDate, name, endDate))
   }
 
   def assignEventTo(eventId: Long, chatSessionId: Long): Unit = {

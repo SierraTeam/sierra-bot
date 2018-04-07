@@ -53,9 +53,7 @@ abstract class SierraBot extends TelegramBot with Commands {
 
     val today = Calendar.getInstance().getTime()
     var taskName : String = "midterm"
-    Event.create(2,today,taskName,30);
-    //id: Long, time: Date,e
-    //name: String, duration: Long
+    Event.create(2,today,taskName,today)
 
     implicit msg =>  withArgs {
 
