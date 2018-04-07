@@ -63,6 +63,12 @@ object DbSchema extends Schema {
     }
   }
 
+  def update(e: Event): Unit = {
+    transaction {
+      events.update(e)
+    }
+  }
+
   def update(s: ChatSession): Unit = {
     transaction {
       chatSessions.update(s)
