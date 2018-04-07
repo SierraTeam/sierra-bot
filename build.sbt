@@ -6,6 +6,8 @@ version := "0.1"
 
 scalaVersion := "2.12.4"
 
+herokuAppName in Compile := "innosierrabot"
+
 resolvers += Classpaths.typesafeReleases
 
 libraryDependencies ++= Seq(
@@ -13,5 +15,9 @@ libraryDependencies ++= Seq(
   "org.squeryl" %% "squeryl" % "0.9.5-7",
   "com.h2database" % "h2" % "1.4.196",
   "org.scalactic" %% "scalactic" % "3.0.5",
-  "org.scalatest" %% "scalatest" % "3.0.5" % "test"
+  "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+  "com.typesafe" % "config" % "1.3.2",
+  "org.scalamock" %% "scalamock" % "4.1.0" % Test
 )
+
+enablePlugins(JavaAppPackaging)

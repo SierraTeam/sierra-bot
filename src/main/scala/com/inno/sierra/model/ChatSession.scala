@@ -31,7 +31,7 @@ case class ChatSession (
 
 
 object ChatSession {
-  def create(id: Long, csid: Long, alias: String,
+  def create(csid: Long, alias: String,
              chatState: ChatState.ChatState): ChatSession = {
     val state = chatState match {
       case ChatState.Start => 1
@@ -50,5 +50,9 @@ object ChatSession {
     */
   def get(ids: Option[mutable.Set[Long]]): mutable.Set[ChatSession] = {
     DbSchema.getAllChatSessions(ids)
+  }
+
+  def exists(id: Long): Boolean = {
+    DbSchema.existsChatSession(id)
   }
 }
