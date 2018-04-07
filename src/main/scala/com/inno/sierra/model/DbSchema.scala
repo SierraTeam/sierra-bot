@@ -39,9 +39,9 @@ object DbSchema extends Schema {
   ))
 
   on(events)(e => declare(
-    e.time is indexed,
+    e.beginDate is indexed,
     e.name is indexed,
-    e.duration is dbType("bigint")
+    e.endDate is indexed
   ))
 
   // -----Methods
