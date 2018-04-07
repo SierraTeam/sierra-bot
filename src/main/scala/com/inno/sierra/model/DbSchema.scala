@@ -3,7 +3,7 @@ package com.inno.sierra.model
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 import org.squeryl.PrimitiveTypeMode._
-import org.squeryl.adapters.H2Adapter
+import org.squeryl.adapters.{H2Adapter, PostgreSqlAdapter}
 import org.squeryl.{Schema, Session, SessionFactory}
 import scala.collection.mutable
 import java.util.Date
@@ -13,14 +13,30 @@ object DbSchema extends Schema {
   // -----Initialize a connection with DB
   //val logger = LoggerFactory.getLogger(getClass)
 
-  Class.forName("org.h2.Driver")
+  val driver = conf.getString("db.driver")
+  val adapter = driver match {
+    case "h2" => {
+      Class.forName("org.h2.Driver")
+      new H2Adapter
+    }
+    case "postgresql" => {
+      Class.forName("org.postgresql.Driver")
+      new PostgreSqlAdapter
+    }
+    case _ => {
+      throw new NotImplementedError("Unsupported database driver")
+    }
+  }
+
   SessionFactory.concreteFactory = Some(() =>
     Session.create(
       java.sql.DriverManager.getConnection(
         conf.getString("db.connection"),
         conf.getString("db.username"),
-        conf.getString("db.password")),
-      new H2Adapter)
+        conf.getString("db.password")
+      ),
+      adapter
+    )
   )
 
 
