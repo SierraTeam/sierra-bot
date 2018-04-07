@@ -34,19 +34,30 @@ abstract class SierraBot extends TelegramBot with Commands {
     // TODO: get the user
     implicit msg => reply("Description of bot. Description of commands.")
   }
+  //def doubleMatch(foo: Any, bar: Any,foo2: Any, bar2: Any) = (foo, bar,foo2,bar2) match {
+   // case ('a', 'b','c',_) => "a and b"
+  //  case (a:Long,b:Date,c:String,d:Long) => "oi"
+
+  //}
 
   onCommand("/keepinmind") {
 
     val today = Calendar.getInstance().getTime()
     var taskName : String = "midterm"
     Event.create(2,today,taskName,30);
+    //id: Long, time: Date,e
+    //name: String, duration: Long
 
     implicit msg =>  withArgs {
-      args =>
 
-        for (name <- args){
-          reply(name)
-        }
+      args =>  //doubleMatch(1,20170101,args.mkString(" "),37);
+                  print(args);
+        //reply(args.mkString(" "))
+
+
+   //     for (name <- args){
+    //      reply(name)
+    //    }
        // nameValuePairs: Array[java.lang.String] = Array(oauth_token=FOO, oauth_token_secret=BAR, oauth_expires_in=3600)
 
     }
