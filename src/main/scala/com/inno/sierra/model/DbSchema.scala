@@ -7,8 +7,8 @@ import org.slf4j.LoggerFactory
 import org.squeryl.PrimitiveTypeMode._
 import org.squeryl.adapters.{H2Adapter, PostgreSqlAdapter}
 import org.squeryl.{Query, Schema, Session, SessionFactory}
-
 import scala.collection.mutable
+import scala.collection.mutable.MutableList
 import java.util.Date
 
 object DbSchema extends Schema {
@@ -154,12 +154,6 @@ object DbSchema extends Schema {
     }
   }
 
-  def getChatSessionIdByChatId(chatId: Long) = {
-    transaction {
-      from(chatSessions)(cs => where(cs.csid === chatId).select(cs)).head
-    }
-  }
-
   def getAllEventsTillDate(date: Date, isNotified: Boolean = false): mutable.Set[Event] = {
     val stamp = new Timestamp(date.getTime)
     val result = mutable.Set[Event]()
@@ -171,6 +165,12 @@ object DbSchema extends Schema {
     result
   }
 
+  def getChatSessionIdByChatId(chatId: Long) = {
+    transaction {
+      from(chatSessions)(cs => where(cs.csid === chatId).select(cs)).head
+    }
+  }
+
   def getChatSessionByEventId(eventId: Long) = {
     transaction {
       val chatId = from(csEvents)(
@@ -179,6 +179,24 @@ object DbSchema extends Schema {
     }
   }
 
+  def hasIntersections(csid: Long, beginDate: Timestamp, endDate: Timestamp) = {
+    val result = MutableList[Event]()
+    transaction {
+      from(events, csEvents, chatSessions)((e, cse, cs) =>
+        where(
+          cse.eventId === e.id and cse.chatSessionId === cs.id and cs.csid === csid and
+          ((e.beginDate.lt(beginDate) and e.endDate.gt(beginDate)) or
+            (e.beginDate.lt(endDate) and e.endDate.gt(endDate)) or
+            (e.beginDate.gt(beginDate) and e.endDate.lt(endDate))
+          )
+        ).select(e))
+        .foreach(e => result += e)
+    }
+    result
+  }
+
+  /*or
+  (e.beginDate.lt(endDate) and e.endDate.gt(endDate))*/
 
   /**
     * Initializes the database and fills it with test data.
@@ -193,8 +211,8 @@ object DbSchema extends Schema {
     println("db is initialized")
 
     ChatSession.create(103478185, "ilyavy", ChatState.Start)
-    Event.create(103478185, new Date((new Date()).getTime + 30000),
-      "Test delayed", new Date((new Date()).getTime + 60000))
+    Event.create(103478185, new Date((new Date()).getTime + 300000),
+      "Test delayed", new Date((new Date()).getTime + 600000))
 
     /*ChatSession.create(101, "ax_yv", ChatState.Start)
     ChatSession.create(102, "happy_marmoset", ChatState.Start)

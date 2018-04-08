@@ -14,6 +14,10 @@ case class Event private (
             var endDate: Timestamp,
             var isNotified: Boolean = false) extends KeyedEntity[Long] {
 
+  // TODO: make a better format
+  override def toString: String = {
+    beginDate + " - " + endDate + ": " + name
+  }
 }
 
 object Event {
