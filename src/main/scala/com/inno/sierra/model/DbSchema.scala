@@ -1,10 +1,13 @@
 package com.inno.sierra.model
 
+import java.sql.Timestamp
+
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 import org.squeryl.PrimitiveTypeMode._
 import org.squeryl.adapters.{H2Adapter, PostgreSqlAdapter}
-import org.squeryl.{Schema, Session, SessionFactory}
+import org.squeryl.{Query, Schema, Session, SessionFactory}
+
 import scala.collection.mutable
 import java.util.Date
 
@@ -151,30 +154,35 @@ object DbSchema extends Schema {
     }
   }
 
+  def getChatSessionIdByChatId(chatId: Long) = {
+    transaction {
+      from(chatSessions)(cs => where(cs.csid === chatId).select(cs)).head
+    }
+  }
+
   def getAllEventsTillDate(date: Date, isNotified: Boolean = false): mutable.Set[Event] = {
+    val stamp = new Timestamp(date.getTime)
     val result = mutable.Set[Event]()
 
     transaction {
-      from(events)(e => select(e))
-        .foreach(e => {
-          if (e.beginDate.before(date) && !e.isNotified) {
-            result += e
-          }
-        })
-      result
+      from(events)(e => where(e.isNotified === false and e.beginDate.lt(stamp)).select(e))
+        .foreach(e => result += e)
     }
+    result
   }
 
-  def getChatIdEvent(eventId: Long): Long = {
-
+  def getChatSessionByEventId(eventId: Long) = {
     transaction {
-      from(csEvents)(s => where(s.eventId === eventId).select(s)).head.chatSessionId
+      val chatId = from(csEvents)(
+        s => where(s.eventId === eventId).select(s)).head.chatSessionId
+      from(chatSessions)(cs => where(cs.id === chatId).select(cs)).head
     }
-
   }
 
 
-
+  /**
+    * Initializes the database and fills it with test data.
+    */
   def init(): Unit = {
     // Recreate DB
     transaction {
@@ -182,21 +190,18 @@ object DbSchema extends Schema {
       DbSchema.drop
       DbSchema.create
     }
-    //Event.create(3, new Date((new Date()).getTime + 30000), "Test delayed", new Date((new Date()).getTime + 60000))
     println("db is initialized")
+
+    ChatSession.create(103478185, "ilyavy", ChatState.Start)
+    Event.create(103478185, new Date((new Date()).getTime + 30000),
+      "Test delayed", new Date((new Date()).getTime + 60000))
 
     /*ChatSession.create(101, "ax_yv", ChatState.Start)
     ChatSession.create(102, "happy_marmoset", ChatState.Start)
-    ChatSession.create(103, "ilyavy", ChatState.Start)
     ChatSession.create(104, "julioreis22", ChatState.Start)
     ChatSession.create(105, "martincfx", ChatState.Start)*/
 
-    /*val e = Event.create(0, new Date(), "meeting", 60)
-    Event.assignEventTo(e.id, 1)
-    Event.assignEventTo(e.id, 2)*/
-
-    println(ChatSession.get(None))
-    println(Event.get(None))
-
+    println("Chat sessions: " + ChatSession.get(None))
+    println("Events: " + Event.get(None))
   }
 }

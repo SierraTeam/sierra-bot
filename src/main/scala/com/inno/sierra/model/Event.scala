@@ -17,20 +17,21 @@ case class Event private (
 }
 
 object Event {
-  def create(id: Long, beginDate: Date,
-             name: String, endDate: Date): Event = {
-
-    val begin = new Timestamp(beginDate.getTime())
-    val end = new Timestamp(endDate.getTime())
-    DbSchema.insert(new Event(id, begin, name, end))
+  def create(chatId: Long, beginDate: Date, name: String, endDate: Date): Event = {
+    val begin = new Timestamp(beginDate.getTime)
+    val end = new Timestamp(endDate.getTime)
+    val event = DbSchema.insert(new Event(0, begin, name, end))
+    assignEventTo(event.id, chatId)
+    event
   }
 
   def update(event: Event): Unit = {
     DbSchema.update(event)
   }
 
-  def assignEventTo(eventId: Long, chatSessionId: Long): Unit = {
-    val cse = new ChatSessionEvents(eventId, chatSessionId)
+  def assignEventTo(eventId: Long, chatId: Long): Unit = {
+    val chatSession = DbSchema.getChatSessionIdByChatId(chatId)
+    val cse = new ChatSessionEvents(eventId, chatSession.id)
     DbSchema.insert(cse)
   }
 

@@ -62,6 +62,6 @@ object ChatSession {
   def hasIntersections(csid: Long, beginDate: Date, endDate: Date) = {
     val begin = new Timestamp(beginDate.getTime)
     val end = new Timestamp(endDate.getTime)
-    DbSchema.hasIntersactions(csid, begin, end)
+    //DbSchema.hasIntersactions(csid, begin, end)
   }
 }
