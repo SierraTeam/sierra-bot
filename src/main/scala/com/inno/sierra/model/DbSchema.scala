@@ -210,9 +210,9 @@ object DbSchema extends Schema {
     }
     println("db is initialized")
 
-    ChatSession.create(103478185, "ilyavy", ChatState.Start)
+    /*ChatSession.create(103478185, "ilyavy", ChatState.Start)
     Event.create(103478185, new Date((new Date()).getTime + 300000),
-      "Test delayed", new Date((new Date()).getTime + 600000))
+      "Test delayed", new Date((new Date()).getTime + 600000))*/
 
     /*ChatSession.create(101, "ax_yv", ChatState.Start)
     ChatSession.create(102, "happy_marmoset", ChatState.Start)
