@@ -19,7 +19,7 @@ import scala.collection.mutable.MutableList
 import scala.concurrent.Future
 
 abstract class SierraBot extends TelegramBot with Commands {
-  val botName = "@InnoSierraBot"
+  lazy val botName = ConfigFactory.load().getString("bot.name")
   lazy val token = ConfigFactory.load().getString("bot.token")
 
   val NUM_OF_THREADS = 10
