@@ -6,7 +6,7 @@ import java.util.Date
 import com.inno.sierra.model.{ChatSession, ChatState, DbSchema, Event}
 import info.mukel.telegrambot4s.api._
 import info.mukel.telegrambot4s.api.declarative.Commands
-import info.mukel.telegrambot4s.methods.SendMessage
+import info.mukel.telegrambot4s.methods.{GetMe, SendMessage}
 import info.mukel.telegrambot4s.models._
 import java.util.Calendar
 
@@ -16,10 +16,12 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 import scala.collection.mutable.MutableList
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 abstract class SierraBot extends TelegramBot with Commands {
-  lazy val botName = ConfigFactory.load().getString("bot.name")
+//  lazy val botName = ConfigFactory.load().getString("bot.name")
+  val botName: String =
+    Await.result(request(GetMe).map(_.firstName), 10.seconds)
   lazy val token = ConfigFactory.load().getString("bot.token")
 
   val NUM_OF_THREADS = 10
