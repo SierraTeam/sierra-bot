@@ -112,12 +112,42 @@ abstract class SierraBot extends TelegramBot with Commands {
       // TODo: maybe we need to check that the event planned is in the future
       val now = Calendar.getInstance().getTime()
       args => {
+        val dateRegex = """([0-9]{2}.[0-9]{2}.[0-9]{4})"""
+        val timeRegex = """([0-9]{2}:[0-9]{2})"""
+        var nameRex = """([A-Za-z0-9]{1,30})"""
+        val duration = """([0-9]{0,4})"""
+        val DateOnly = dateRegex.r
+        val TimeOnly = timeRegex.r
+        val NameMeeting = nameRex.r
+        val TimeDuration = duration.r
+
         val parameter = MutableList[String]()
+        val regex = MutableList[String]()
+
+        var i = 0;
+        var listRegex = List(DateOnly,TimeOnly,TimeDuration,NameMeeting)
         for (arg <- args) {
-          print(arg) // TODO: change to log
+          print(arg)
+          print(parameter)// TODO: change to log
           if (!arg.isEmpty && !arg.startsWith("/")) {
-            println(" - param is added")
+
+            def verifyParameter(x: Any,y:scala.util.matching.Regex) = x match {
+            //  case s: String =>  println(" - param match string : "+arg)
+            //  case TimeDuration(d) =>  println(" - duration only : "+d+arg)
+            //  case DateOnly(d) =>  println(" - date only : "+d+arg)
+            //  case TimeOnly(d) =>  println(" - time only : "+d+arg)
+              case
+                test:String if y.findFirstMatchIn(test).nonEmpty => println("Checked correct parameter: "+arg)
+              case _  =>   println("Wrong parameter: "+arg)
+            }
+            verifyParameter(arg,listRegex(i));
+          //  val unMactchParamerter = verifyParameter(arg,listRegex(i));
+          //  if(unMactchParamerter == true){
+           //   return "Wrong format of parameter"
+         //   }
             parameter += arg
+            i+= 1
+            print(arg)
           }
         }
 
@@ -129,7 +159,6 @@ abstract class SierraBot extends TelegramBot with Commands {
           val simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm")
           val beginDate: Date = simpleDateFormat.parse(date_meeting)
 
-
           val ONE_MINUTE_IN_MILLIS = 60000
           val duration = Integer.parseInt(parameter(3)) * ONE_MINUTE_IN_MILLIS
           val endDate = new Date(beginDate.getTime() + duration)
@@ -140,7 +169,7 @@ abstract class SierraBot extends TelegramBot with Commands {
 
           if (intersectedEvents.isEmpty) {
             val event = Event.create(msg.chat.id, beginDate, parameter(2), endDate)
-            return "The event " + event + " is remembered. I will remind you ;)" // TODO: phrases in different file!
+            return "The event " + event + " is recorded. I will remind you ;)" // TODO: phrases in different file!
           } else {
             val stringBuilder = new StringBuilder(
               "I'm sorry but this event intersects with another ones:\n ")
