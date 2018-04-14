@@ -71,4 +71,4 @@ jrebel.lic
 /bot.token
 *.log
 *application.conf
-*reference.conf
+reference.conf
