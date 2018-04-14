@@ -1,5 +1,6 @@
 package com.inno.sierra.bot
 
+import akka.actor.Actor
 import com.inno.sierra.model.{ChatSession, DbSchema, Event}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
@@ -8,10 +9,10 @@ import info.mukel.telegrambot4s.methods.SendMessage
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class RunnableNotification(event: Event, bot: SierraBot) {
+class NotificationActor(bot: SierraBot) extends Actor{
   /*lazy val token = ConfigFactory.load().getString("bot.token")*/
 
-  def sendNotification()(implicit ec:ExecutionContext): Future[Unit] = Future {
+  private def sendNotification(event: Event): Unit =  {
     val chatSession = DbSchema.getChatSessionByEventId(event.id)
     // TODO: change to log
     println("Notifying about " + event.name + ", chatsessionid: " + chatSession.csid)
@@ -24,5 +25,10 @@ class RunnableNotification(event: Event, bot: SierraBot) {
 
     event.isNotified = true
     DbSchema.update(event)
+  }
+
+  override def receive : Receive = {
+    case x:Event ⇒ sendNotification(x)
+    case _      ⇒ println("received unknown message")  //TODO log
   }
 }

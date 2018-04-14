@@ -9,14 +9,15 @@ import info.mukel.telegrambot4s.api.declarative.Commands
 import info.mukel.telegrambot4s.methods.{GetMe, SendMessage}
 import info.mukel.telegrambot4s.models._
 import java.util.Calendar
+import java.util.concurrent.{Executors, ThreadPoolExecutor}
 
-import akka.actor.Cancellable
+import akka.actor.{ActorSystem, Cancellable, Props}
 
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 import scala.collection.mutable.MutableList
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 abstract class SierraBot extends TelegramBot with Commands {
 //  lazy val botName = ConfigFactory.load().getString("bot.name")
@@ -68,11 +69,16 @@ abstract class SierraBot extends TelegramBot with Commands {
     }
   }
 
+
+  val actorSystem = ActorSystem("telegramNotification")
+
   override def run(): Unit = {
     super.run()
-    val ns = new NotifierService(NUM_OF_THREADS, this)
-    notifier = system.scheduler.schedule(0 seconds, 10 seconds){
-      ns.sendMessages()
+    val ns = new NotifierService()(ExecutionContext.fromExecutor(Executors.newCachedThreadPool()))
+    val notificationSendingActor = actorSystem.actorOf(Props(classOf[NotificationActor], this), "notificationSendingActor")
+    val timeframe = (10 seconds)   //each x seconds bot will lookup for new events and send them
+    notifier = actorSystem.scheduler.schedule(0 seconds, timeframe){
+      ns.sendMessages(notificationSendingActor, timeframe)
     }
   }
 
