@@ -19,7 +19,7 @@ case class MonthCalendar(monthInYear: Int, year: Int) {
     val calendar = new GregorianCalendar()
     calendar.set(Calendar.DAY_OF_MONTH, 1)
     calendar.set(Calendar.YEAR, year)
-    calendar.set(Calendar.MONTH, monthInYear)
+    calendar.set(Calendar.MONTH, monthInYear - 1)
     calendar
   }
   val monthName: String = javaCalendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault)
@@ -27,7 +27,7 @@ case class MonthCalendar(monthInYear: Int, year: Int) {
   val daysInMonth: Seq[Int] = {
     val tempCal = makeJavaCalendar(year, monthInYear)
     val dayNumbers = mutable.Buffer[Int]()
-    while (tempCal.get(Calendar.MONTH) == monthInYear) {
+    while (tempCal.get(Calendar.MONTH) == monthInYear - 1) {
       dayNumbers += tempCal.get(Calendar.DAY_OF_MONTH)
       tempCal.add(Calendar.DATE, 1)
     }

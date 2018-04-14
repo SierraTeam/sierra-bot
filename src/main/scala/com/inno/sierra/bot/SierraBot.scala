@@ -282,7 +282,7 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
           }
         case "previous" =>
           month - 1 match {
-            case monthMinusOne if monthMinusOne < 1 => (year - 1, 1)
+            case monthMinusOne if monthMinusOne < 1 => (year - 1, 12)
             case _ => (year, month - 1)
           }
       }
@@ -299,6 +299,7 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     }
   }
 
+  // scalastyle:off method.length
   def createCalendar(year: Int, month: Int): InlineKeyboardMarkup = {
     val daysInWeek = Calendar.SATURDAY
     val daysInCalendarMax = 42
@@ -316,10 +317,14 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
         "ignore"
       )
     }
-    val daySlotsInMonth: Seq[String] = (Seq().padTo(calendar.dayOfWeek, "  ") ++
-      calendar.daysInMonth.map(_.toString))
-      .padTo(daysInCalendarMax, "  ")
-    val body = daySlotsInMonth.grouped(daysInWeek).map { weekSlots =>
+    val daySlotsInMonth: Seq[String] = Seq().padTo(calendar.dayOfWeek, "  ") ++
+        calendar.daysInMonth.map(_.toString)
+    val daySlotsInMonthPadded: Seq[String] = daySlotsInMonth match {
+      case _ if daySlotsInMonth.lengthCompare(daysInCalendarMax - 7) > 0 =>  daySlotsInMonth.padTo(daysInCalendarMax, " ")
+      case _ => daySlotsInMonth.padTo(daysInCalendarMax - 7, " ")
+    }
+
+    val body = daySlotsInMonthPadded.grouped(daysInWeek).map { weekSlots =>
       weekSlots.map { dayOfMonth =>
         InlineKeyboardButton.callbackData(
           dayOfMonth,
@@ -349,11 +354,12 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
       )
     )
   }
+  // scalastyle:on method.length
 
   onCommand("/calendar") { implicit msg =>
     val now = new GregorianCalendar
     val year = now.get(Calendar.YEAR)
-    val month = now.get(Calendar.MONTH)
+    val month = now.get(Calendar.MONTH) + 1
     val calendar = createCalendar(year, month)
 
     reply("Please choose the date to conduct an event on", replyMarkup = Some(calendar)).map { msg =>
