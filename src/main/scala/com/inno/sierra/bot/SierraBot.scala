@@ -3,13 +3,13 @@ package com.inno.sierra.bot
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import com.inno.sierra.model.{ChatSession, ChatState, DbSchema, Event}
+import com.inno.sierra.model.{ChatSession, ChatState, Event}
 import info.mukel.telegrambot4s.api._
 import info.mukel.telegrambot4s.api.declarative.Commands
 import info.mukel.telegrambot4s.methods.{GetMe, SendMessage}
 import info.mukel.telegrambot4s.models._
 import java.util.Calendar
-import java.util.concurrent.{Executors, ThreadPoolExecutor}
+import java.util.concurrent.Executors
 
 import akka.actor.{ActorSystem, Cancellable, Props}
 
@@ -19,7 +19,7 @@ import com.typesafe.config.ConfigFactory
 import scala.collection.mutable.MutableList
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-abstract class SierraBot extends TelegramBot with Commands {
+abstract class SierraBot extends TelegramBot with Commands{
 //  lazy val botName = ConfigFactory.load().getString("bot.name")
   val botName: String =
     Await.result(request(GetMe).map(_.firstName), 10.seconds)
@@ -45,7 +45,7 @@ abstract class SierraBot extends TelegramBot with Commands {
     * @param message
     */
   override def receiveMessage(message: Message): Unit = {
-    println("recieved message '" + message.text + "' from " + message.chat)
+    logger.debug("recieved message '" + message.text + "' from " + message.chat)
     for (text <- message.text) {
       // If it is a group chat
       if (message.chat.`type` == ChatType.Group) {
@@ -121,9 +121,9 @@ abstract class SierraBot extends TelegramBot with Commands {
       args => {
         val parametro = MutableList[String]()
         for (arg <- args) {
-          print(arg) // TODO: change to log
+          logger.trace(arg)
           if (!arg.isEmpty && !arg.startsWith("/")) {
-            println(" - param is added")
+            logger.trace(" - param is added")
             parametro += arg
           }
         }
@@ -142,7 +142,7 @@ abstract class SierraBot extends TelegramBot with Commands {
 
           val intersectedEvents = ChatSession.hasIntersections(
             msg.chat.id, beginDate, endDate)
-          println(intersectedEvents) // TODO: to log
+          logger.debug(intersectedEvents.toString)
 
           if (intersectedEvents.isEmpty) {
             val event = Event.create(msg.chat.id, beginDate, parametro(2), endDate)

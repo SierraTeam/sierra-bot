@@ -3,19 +3,19 @@ package com.inno.sierra.model
 import java.sql.Timestamp
 
 import com.typesafe.config.ConfigFactory
-import org.slf4j.LoggerFactory
 import org.squeryl.PrimitiveTypeMode._
 import org.squeryl.adapters.{H2Adapter, PostgreSqlAdapter}
-import org.squeryl.{Query, Schema, Session, SessionFactory}
+import org.squeryl.{Schema, Session, SessionFactory}
 
 import scala.collection.mutable
-import scala.collection.mutable.{ListBuffer, MutableList}
+import scala.collection.mutable.ListBuffer
 import java.util.Date
 
-object DbSchema extends Schema {
+import com.typesafe.scalalogging.LazyLogging
+
+object DbSchema extends Schema with LazyLogging{
   private val conf = ConfigFactory.load()
   // -----Initialize a connection with DB
-  //val logger = LoggerFactory.getLogger(getClass)
 
   val driver = conf.getString("db.driver")
   val adapter = driver match {
@@ -192,7 +192,7 @@ object DbSchema extends Schema {
           )
         ).select(e))
         .foreach(e => result += e)
-      println(result)
+      logger.debug(result.toString)
       result
     }
 
@@ -211,7 +211,7 @@ object DbSchema extends Schema {
       DbSchema.drop
       DbSchema.create
     }
-    println("db is initialized")
+    logger.debug("db is initialized")
 
     /*ChatSession.create(103478185, "ilyavy", ChatState.Start)
     Event.create(103478185, new Date((new Date()).getTime + 300000),
@@ -222,7 +222,7 @@ object DbSchema extends Schema {
     ChatSession.create(104, "julioreis22", ChatState.Start)
     ChatSession.create(105, "martincfx", ChatState.Start)*/
 
-    println("Chat sessions: " + ChatSession.get(None))
-    println("Events: " + Event.get(None))
+    logger.debug("Chat sessions: " + ChatSession.get(None))
+    logger.debug("Events: " + Event.get(None))
   }
 }

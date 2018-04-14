@@ -18,7 +18,9 @@ libraryDependencies ++= Seq(
   "org.scalactic" %% "scalactic" % "3.0.5",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test",
   "com.typesafe" % "config" % "1.3.2",
-  "org.scalamock" %% "scalamock" % "4.1.0" % Test
+  "org.scalamock" %% "scalamock" % "4.1.0" % Test,
+  "ch.qos.logback" % "logback-classic" % "1.2.3",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
 )
 
 enablePlugins(JavaAppPackaging)
