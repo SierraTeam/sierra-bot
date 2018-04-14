@@ -21,12 +21,14 @@ object ChatState extends Enumeration {
   * @param id - id will be assigned automatically by ORM
   * @param csid - chatsession id
   * @param alias - user's alias or "" if it's a group
+  * @param isGroup - is this is a group (supergroup/channel) or not
   * @param chatState - state of the chat
   */
 case class ChatSession (
                          var id: Long,
                          var csid: Long,
                          var alias: String,
+                         var isGroup: Boolean,
                          var chatState: Int
                        ) extends KeyedEntity[Long] {
 
@@ -34,7 +36,7 @@ case class ChatSession (
 
 
 object ChatSession {
-  def create(csid: Long, alias: String,
+  def create(csid: Long, alias: String, isGroup: Boolean,
              chatState: ChatState.ChatState): ChatSession = {
     val state = chatState match {
       case ChatState.Start => 1
@@ -42,7 +44,7 @@ object ChatSession {
       case ChatState.EditEvent => 3
     }
 
-    DbSchema.insert(new ChatSession(0, csid, alias, state))
+    DbSchema.insert(new ChatSession(0, csid, alias, isGroup, state))
   }
 
   /**
@@ -51,7 +53,7 @@ object ChatSession {
     *            for all existing if None.
     * @return - mutable set of chat sessions.
     */
-  def get(ids: Option[mutable.Set[Long]]): mutable.Set[ChatSession] = {
+  def get(ids: Option[mutable.Set[Long]]) = {
     DbSchema.getAllChatSessions(ids)
   }
 
@@ -63,5 +65,9 @@ object ChatSession {
     val begin = new Timestamp(beginDate.getTime)
     val end = new Timestamp(endDate.getTime)
     DbSchema.hasIntersections(csid, begin, end)
+  }
+
+  def addUserToGroup(groupChatId: Long, csid: Long, alias: String) = {
+
   }
 }

@@ -51,11 +51,14 @@ object DbSchema extends Schema with LazyLogging{
     via[ChatSessionEvents](
     (cs, e, cse) => (cse.eventId === e.id, cs.id === cse.chatSessionId)
   )
+  val groupMembers = manyToManyRelation(chatSessions, chatSessions).
+    via[GroupMembers](
+    (gr, mem, grm ) => (grm.groupId === gr.id, grm.memberId === mem.id)
+  )
 
   on(chatSessions)(s => declare(
     s.csid is(indexed, unique, dbType("bigint")),
-    s.alias is(indexed, unique, dbType("varchar(255)")),
-    s.chatState is dbType("smallint")
+    s.alias is(indexed, unique, dbType("varchar(255)"))
   ))
 
   on(events)(e => declare(

@@ -96,25 +96,28 @@ abstract class SierraBot extends TelegramBot with Commands{
     val user = msg.from.get
     val chat = msg.chat
 
+    println(user)
+    println(chat)
+
+    if (!chat.`type`.equals(ChatType.Private)) {
+      println("it's a group")
+      println(user.id)
+      println(user.username)
+    } else {
+      println("not a group")
+    }
+
     if (!ChatSession.exists(chat.id)) {
       ChatSession.create(
-        chat.id, user.username.get, ChatState.Start)
-      "Nice to meet you, " + user.firstName + "! I can help" +
-        " you to plan your activities. I'll try to be useful for you :)"
+        chat.id, user.username.get,
+        !chat.`type`.equals(ChatType.Private), ChatState.Start)
+      MessagesText.START_FIRST_TIME.format(user.firstName)
     } else {
-      "Welcome back, " + user.firstName + "! I'm glad to see you again :) " +
-        "How can I help you?"
+      MessagesText.START_AGAIN.format(user.firstName)
     }
   }
 
-  def info(): String = {
-    "Telegram bot created with Scala. This bot is a simple Assistant that provides " +
-      "the following functionality:\n" +
-      "/start: Starts this bot.\n" +
-      "/keepinmind: Creates an Event to Keep in Mind.\n" +
-      "/info:  Displays description (this text).\n" +
-      "/exit:  TODO.\n"
-  }
+  def info(): String = MessagesText.INFO
 
   def keepInMind(implicit msg: Message): String = {
     start(msg)
@@ -163,7 +166,7 @@ abstract class SierraBot extends TelegramBot with Commands{
         }
       }
     }
-    return "I'm so sorry! It seems something went wrong, try again, please."
+    return MessagesText.ERROR_UNEXPTECTED
   }
 
   def sendMessage(csid: Long, text: String): Unit = synchronized {
