@@ -31,13 +31,14 @@ case class ChatSession (
                          var chatState: Int
                        ) extends KeyedEntity[Long] {
 
-  def _chatState(chatState: ChatState.ChatState) = {
-    val state = chatState match {
-      case ChatState.Start => 1
-      case ChatState.CreateEvent => 2
-      case ChatState.EditEvent => 3
-    }
+  // scalastyle:off method.name
+  def chatState_=(chatStateNew: ChatState.ChatState): Unit = {
+    chatState = chatStateNew.id
   }
+  // scalastyle:on method.name
+
+  def save() = DbSchema.update(this)
+
 }
 
 
@@ -46,13 +47,7 @@ object ChatSession {
 
   def create(csid: Long, alias: String, isGroup: Boolean,
              chatState: ChatState.ChatState): ChatSession = {
-    val state = chatState match {
-      case ChatState.Start => 1
-      case ChatState.CreateEvent => 2
-      case ChatState.EditEvent => 3
-    }
-
-    DbSchema.insert(new ChatSession(0, csid, alias, isGroup, state))
+    DbSchema.insert(new ChatSession(0, csid, alias, isGroup, chatState.id))
   }
 
   /**
@@ -65,8 +60,8 @@ object ChatSession {
     DbSchema.getAllChatSessions(ids)
   }
 
-  def getByChatSessionId(csid: Long) = {
-    DbSchema.getChatSessionByChatSessionId(csid)
+  def getByChatId(csid: Long) = {
+    DbSchema.getChatSessionByChatId(csid)
   }
 
   def update(cs: ChatSession) = {
@@ -85,11 +80,11 @@ object ChatSession {
 
   def addUserToGroup(groupChatId: Long,
                      memberChatId: Long, memberAlias: String) = {
-    val group = DbSchema.getChatSessionIdByChatId(groupChatId)
+    val group = DbSchema.getChatSessionByChatId(groupChatId)
       .getOrElse(
         ChatSession.create(groupChatId, "", isGroup = true, DEFAULT_STATE)
       )
-    val member = DbSchema.getChatSessionIdByChatId(memberChatId)
+    val member = DbSchema.getChatSessionByChatId(memberChatId)
       .getOrElse(
         ChatSession.create(
           memberChatId, memberAlias, isGroup = false, DEFAULT_STATE)

@@ -119,10 +119,6 @@ object DbSchema extends Schema with LazyLogging {
     result.asInstanceOf[List[T]]
   }
 
-  def getChatSessionByChatSessionId(csid: Long) = {
-    transaction(from(chatSessions)(s => where(s.csid === csid).select(s)))
-  }
-
   def getAllChatSessions(
                           ids: Option[mutable.Set[Long]]
                         ): mutable.Set[ChatSession] = {
@@ -196,7 +192,15 @@ object DbSchema extends Schema with LazyLogging {
     result
   }
 
+  /**
+    * TODO: remove after being sure that nobody uses it
+    * @deprecated
+    */
   def getChatSessionIdByChatId(chatId: Long) = {
+    getChatSessionByChatId(chatId)
+  }
+
+  def getChatSessionByChatId(chatId: Long) = {
     transaction {
       from(chatSessions)(cs => where(cs.csid === chatId).select(cs)).headOption
     }
