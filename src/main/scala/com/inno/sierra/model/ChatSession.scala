@@ -4,6 +4,7 @@ import java.sql.Timestamp
 import java.util.Date
 import org.squeryl.KeyedEntity
 import org.squeryl.PrimitiveTypeMode._
+import org.squeryl.annotations.Column
 
 import scala.collection.mutable
 
@@ -21,19 +22,22 @@ object ChatState extends Enumeration {
   * @param csid - chatsession id
   * @param alias - user's alias or "" if it's a group
   * @param isGroup - is this is a group (supergroup/channel) or not
-  * @param chatState - state of the chat
+  * @param _chatState - state of the chat
   */
 case class ChatSession (
                          var id: Long,
                          var csid: Long,
                          var alias: String,
                          var isGroup: Boolean,
-                         var chatState: Int
+                         @Column("CHATSTATE") var _chatState: Int,
                        ) extends KeyedEntity[Long] {
 
+  def chatState: ChatState.ChatState = {
+    ChatState.values.find(_.id == _chatState).get
+  }
   // scalastyle:off method.name
   def chatState_=(chatStateNew: ChatState.ChatState): Unit = {
-    chatState = chatStateNew.id
+    _chatState = chatStateNew.id
   }
   // scalastyle:on method.name
 
