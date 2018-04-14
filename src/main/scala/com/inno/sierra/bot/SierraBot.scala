@@ -18,12 +18,13 @@ import com.typesafe.config.ConfigFactory
 
 import scala.collection.mutable.MutableList
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 abstract class SierraBot extends TelegramBot with Commands{
 //  lazy val botName = ConfigFactory.load().getString("bot.name")
   val botName: String =
     Await.result(request(GetMe).map(_.firstName), 10.seconds)
-  lazy val token = ConfigFactory.load().getString("bot.token")
+  lazy val token: String = ConfigFactory.load().getString("bot.token")
 
   val NUM_OF_THREADS = 10
   var notifier: Cancellable = _
@@ -42,7 +43,7 @@ abstract class SierraBot extends TelegramBot with Commands{
 
   /**
     * Handling the communication within the group is implemented here.
-    * @param message
+    * @param message message instance
     */
   override def receiveMessage(message: Message): Unit = {
     logger.debug("recieved message '" + message.text + "' from " + message.chat)
@@ -76,9 +77,12 @@ abstract class SierraBot extends TelegramBot with Commands{
     super.run()
     val ns = new NotifierService()(ExecutionContext.fromExecutor(Executors.newCachedThreadPool()))
     val notificationSendingActor = actorSystem.actorOf(Props(classOf[NotificationActor], this), "notificationSendingActor")
-    val timeframe = (10 seconds)   //each x seconds bot will lookup for new events and send them
+    val timeframe = (10 seconds)  //each x seconds bot will lookup for new events and send them
     notifier = actorSystem.scheduler.schedule(0 seconds, timeframe){
-      ns.sendMessages(notificationSendingActor, timeframe)
+      ns.sendMessages(notificationSendingActor, timeframe) onComplete {
+        case Success(_) =>
+        case Failure(e) => logger.error("Notifier error: ", e)
+      }
     }
   }
 
@@ -162,7 +166,10 @@ abstract class SierraBot extends TelegramBot with Commands{
     return "I'm so sorry! It seems something went wrong, try again, please."
   }
 
-  def sendMessage(csid: Long, text: String) = synchronized {
-    request(SendMessage(csid, text))
+  def sendMessage(csid: Long, text: String): Unit = synchronized {
+    request(SendMessage(csid, text)) onComplete {
+      case Success(_) =>
+      case Failure(e) => logger.error("Message sending error: ", e)
+    }
   }
 }
