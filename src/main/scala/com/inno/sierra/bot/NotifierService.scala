@@ -1,25 +1,23 @@
 package com.inno.sierra.bot
 
 import java.util.Date
-import java.util.concurrent.{ExecutorService, Executors}
 
+import akka.actor.ActorRef
 import com.inno.sierra.model.DbSchema
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.FiniteDuration
 
 
-class NotifierService (poolSize: Int, bot: SierraBot) {
-  val pool: ExecutorService = Executors.newFixedThreadPool(poolSize)
+class NotifierService ()(implicit ec: ExecutionContext) extends LazyLogging{
 
-  implicit val ec = ExecutionContext.fromExecutorService(pool)
-
-  def sendMessages(): Future[Unit] = Future {
-    val tillDate = new Date(new Date().getTime + 10000)
+  def sendMessages(sender: ActorRef, timeframe: FiniteDuration): Future[Unit] = Future  {
+    val tillDate = new Date(new Date().getTime + timeframe.toMillis)
     val events = DbSchema.getAllEventsTillDate(tillDate)
-    println("events analyzed till " + tillDate + ": " + events) //TODO: change to log
+    logger.debug("events analyzed till " + tillDate + ": " + events)
     events.foreach(e => {
-      val runnableNotification = new RunnableNotification(e, bot)
-      runnableNotification.sendNotification()
+      sender ! e
     })
-  }
+  }(ec)
 }

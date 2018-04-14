@@ -3,32 +3,43 @@ package com.inno.sierra.bot
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import com.inno.sierra.model.{ChatSession, ChatState, DbSchema, Event}
+import com.inno.sierra.model.{ChatSession, ChatState, Event}
 import info.mukel.telegrambot4s.api._
 import info.mukel.telegrambot4s.api.declarative.Commands
 import info.mukel.telegrambot4s.methods.{GetMe, SendMessage}
 import info.mukel.telegrambot4s.models._
 import java.util.Calendar
+import java.util.concurrent.Executors
 
-import akka.actor.Cancellable
+import akka.actor.{ActorSystem, Cancellable, Props}
 
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 import scala.collection.mutable.MutableList
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
-abstract class SierraBot extends TelegramBot with Commands {
+abstract class SierraBot extends TelegramBot with Commands{
 //  lazy val botName = ConfigFactory.load().getString("bot.name")
   val botName: String =
     Await.result(request(GetMe).map(_.firstName), 10.seconds)
-  lazy val token = ConfigFactory.load().getString("bot.token")
+  lazy val token: String = ConfigFactory.load().getString("bot.token")
 
   val NUM_OF_THREADS = 10
   var notifier: Cancellable = _
 
   onCommand("/start") {
-    implicit msg => reply(start(msg))
+    println("start command")
+    implicit msg => {
+      println("msg is: " + msg)
+      reply(start(msg))
+    }
+  }
+
+  onCommand("/subscribe") {
+    implicit msg => {reply(subscribe(msg))
+    }
   }
 
   onCommand("/keepinmind") {
@@ -41,10 +52,10 @@ abstract class SierraBot extends TelegramBot with Commands {
   
   /**
     * Handling the communication within the group is implemented here.
-    * @param message
+    * @param message message instance
     */
   override def receiveMessage(message: Message): Unit = {
-    println("recieved message '" + message.text + "' from " + message.chat)
+    logger.debug("recieved message '" + message.text + "' from " + message.chat)
     for (text <- message.text) {
       // If it is a group chat
       if (message.chat.`type` == ChatType.Group) {
@@ -68,11 +79,19 @@ abstract class SierraBot extends TelegramBot with Commands {
     }
   }
 
+
+  val actorSystem = ActorSystem("telegramNotification")
+
   override def run(): Unit = {
     super.run()
-    val ns = new NotifierService(NUM_OF_THREADS, this)
-    notifier = system.scheduler.schedule(0 seconds, 10 seconds){
-      ns.sendMessages()
+    val ns = new NotifierService()(ExecutionContext.fromExecutor(Executors.newCachedThreadPool()))
+    val notificationSendingActor = actorSystem.actorOf(Props(classOf[NotificationActor], this), "notificationSendingActor")
+    val timeframe = (10 seconds)  //each x seconds bot will lookup for new events and send them
+    notifier = actorSystem.scheduler.schedule(0 seconds, timeframe){
+      ns.sendMessages(notificationSendingActor, timeframe) onComplete {
+        case Success(_) =>
+        case Failure(e) => logger.error("Notifier error: ", e)
+      }
     }
   }
 
@@ -87,27 +106,32 @@ abstract class SierraBot extends TelegramBot with Commands {
     val chat = msg.chat
 
     if (!ChatSession.exists(chat.id)) {
-      ChatSession.create(
-        chat.id, user.username.get, ChatState.Start)
-      "Nice to meet you, " + user.firstName + "! I can help" +
-        " you to plan your activities. I'll try to be useful for you :)"
+      ChatSession.create(chat.id, user.username.get,
+        !chat.`type`.equals(ChatType.Private), ChatState.Start)
+      MessagesText.START_FIRST_TIME.format(user.firstName)
 
     } else {
-      "Welcome back, " + user.firstName + "! I'm glad to see you again :) " +
-        "How can I help you?"
+      MessagesText.START_AGAIN.format(user.firstName)
     }
   }
 
-  def info(): String = {
-    "Telegram bot created with Scala. This bot is a simple Assistant that provides " +
-      "the following functionality:\n" +
-      "/start: Starts this bot.\n" +
-      "/keepinmind: Creates an Event to Keep in Mind.\n" +
-      "/info:  Displays description (this text).\n" +
-      "/exit:  TODO.\n"
+  def subscribe(msg: Message): String = {
+    val user = msg.from.get
+    val chat = msg.chat
+
+    if (!chat.`type`.equals(ChatType.Private)) {
+      ChatSession.addUserToGroup(chat.id, user.id, user.username.get)
+      MessagesText.SUBSCRIBE_DONE
+    } else {
+      MessagesText.SUBSCRIBE_ALREADY
+    }
   }
 
+  def info(): String = MessagesText.INFO
+
   def keepInMind(implicit msg: Message): String = {
+    start(msg)
+
     withArgs {
       // TODo: maybe we need to check that the event planned is in the future
       val now = Calendar.getInstance().getTime()
@@ -127,8 +151,8 @@ abstract class SierraBot extends TelegramBot with Commands {
         var i = 0;
         var listRegex = List(DateOnly,TimeOnly,TimeDuration,NameMeeting)
         for (arg <- args) {
-          print(arg)
-          print(parameter)// TODO: change to log
+
+
           if (!arg.isEmpty && !arg.startsWith("/")) {
 
             def verifyParameter(x: Any,y:scala.util.matching.Regex) = x match {
@@ -145,9 +169,14 @@ abstract class SierraBot extends TelegramBot with Commands {
           //  if(unMactchParamerter == true){
            //   return "Wrong format of parameter"
          //   }
-            parameter += arg
+
+
             i+= 1
-            print(arg)
+          logger.trace(arg)
+          if (!arg.isEmpty && !arg.startsWith("/")) {
+            logger.trace(" - param is added")
+            parametro += arg
+
           }
         }
 
@@ -165,7 +194,7 @@ abstract class SierraBot extends TelegramBot with Commands {
 
           val intersectedEvents = ChatSession.hasIntersections(
             msg.chat.id, beginDate, endDate)
-          println(intersectedEvents) // TODO: to log
+          logger.debug(intersectedEvents.toString)
 
           if (intersectedEvents.isEmpty) {
             val event = Event.create(msg.chat.id, beginDate, parameter(2), endDate)
@@ -182,10 +211,13 @@ abstract class SierraBot extends TelegramBot with Commands {
         }
       }
     }
-    return "I'm so sorry! It seems something went wrong, try again, please."
+    return MessagesText.ERROR_UNEXPTECTED
   }
 
-  def sendMessage(csid: Long, text: String) = synchronized {
-    request(SendMessage(csid, text))
+  def sendMessage(csid: Long, text: String): Unit = synchronized {
+    request(SendMessage(csid, text)) onComplete {
+      case Success(_) =>
+      case Failure(e) => logger.error("Message sending error: ", e)
+    }
   }
 }
