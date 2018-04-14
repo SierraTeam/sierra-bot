@@ -113,6 +113,8 @@ abstract class SierraBot extends TelegramBot with Commands {
   }
 
   def keepInMind(implicit msg: Message): String = {
+    start(msg)
+
     withArgs {
       // TODo: maybe we need to check that the event planned is in the future
       val now = Calendar.getInstance().getTime()

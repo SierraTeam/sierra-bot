@@ -7,8 +7,9 @@ import org.slf4j.LoggerFactory
 import org.squeryl.PrimitiveTypeMode._
 import org.squeryl.adapters.{H2Adapter, PostgreSqlAdapter}
 import org.squeryl.{Query, Schema, Session, SessionFactory}
+
 import scala.collection.mutable
-import scala.collection.mutable.MutableList
+import scala.collection.mutable.{ListBuffer, MutableList}
 import java.util.Date
 
 object DbSchema extends Schema {
@@ -180,7 +181,7 @@ object DbSchema extends Schema {
   }
 
   def hasIntersections(csid: Long, beginDate: Timestamp, endDate: Timestamp) = {
-    val result = MutableList[Event]()
+    val result = ListBuffer[Event]()
     transaction {
       from(events, csEvents, chatSessions)((e, cse, cs) =>
         where(
@@ -191,8 +192,10 @@ object DbSchema extends Schema {
           )
         ).select(e))
         .foreach(e => result += e)
+      println(result)
+      result
     }
-    result
+
   }
 
   /*or
