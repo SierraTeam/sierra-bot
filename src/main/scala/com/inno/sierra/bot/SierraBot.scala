@@ -363,7 +363,88 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     val calendar = createCalendar(year, month)
 
     reply("Please choose the date to conduct an event on", replyMarkup = Some(calendar)).map { msg =>
-      currentShownDates(ChatMessageId(msg.chat.id, msg.messageId)) = (year, month)
+
+      // Should we select current date automatically?
+      if (true) {
+        currentShownDates(ChatMessageId(msg.chat.id, msg.messageId)) = (year, month)
+        val dayOfMonth = now.get(Calendar.DAY_OF_MONTH)
+        val dateStr = "%02d.%02d.%04d".format(dayOfMonth, month, year)
+        request(
+          SendMessage(
+            ChatId(msg.source),
+            dateStr
+          )
+        )
+      }
+
+      msg
+    }
+  }
+
+  val currentShownTimepickers: scala.collection.mutable.Map[ChatMessageId, (Int, Int)] = scala.collection.mutable.Map.empty[ChatMessageId, (Int, Int)]
+
+  onCallbackWithTag("timepicker-") { implicit cbq =>
+    // Notification only shown to the user who pressed the button.
+    ackCallback()
+
+    for {
+      data <- cbq.data
+      msg <- cbq.message
+    } /* do */ {
+
+      val time = data.split('-').map(_.toInt)
+      val hour = time(0)
+      val minutes = time(1)
+      currentShownDates(ChatMessageId(msg.chat.id, msg.messageId)) = (hour, minutes)
+
+      val timeStr = "%02d:%02d".format(hour, minutes)
+
+      request(
+        SendMessage(
+          ChatId(msg.source),
+          timeStr
+        )
+      )
+    }
+  }
+
+  def createTimepicker(): InlineKeyboardMarkup = {
+
+    // scalastyle:off magic.number
+    val timepickerButtons = (0 to 23 flatMap { hh: Int =>
+      List(0, 30) map { mm: Int =>
+        InlineKeyboardButton.callbackData(
+          "%02d:%02d".format(hh, mm),
+          s"timepicker-$hh-$mm"
+        )
+      }
+    }).toSeq.grouped(6).toSeq
+    // scalastyle:on magic.number
+
+    InlineKeyboardMarkup(timepickerButtons)
+  }
+
+  onCommand("/timepicker") { implicit msg =>
+    val timepicker = createTimepicker()
+
+    reply("Please choose the date to conduct an event on", replyMarkup = Some(timepicker)).map { msg =>
+
+      // Should we select current time automatically?
+      if (true) {
+        val now = Calendar.getInstance()
+        now.add(Calendar.MINUTE, 31)
+        val hour = now.get(Calendar.HOUR_OF_DAY)
+        val minutes = (30 * Math.floor(now.get(Calendar.MINUTE) / 30.0)).toInt
+        currentShownDates(ChatMessageId(msg.chat.id, msg.messageId)) = (hour, minutes)
+        val timeStr = "%02d:%02d".format(hour, minutes)
+        request(
+          SendMessage(
+            ChatId(msg.source),
+            timeStr
+          )
+        )
+      }
+
       msg
     }
   }
