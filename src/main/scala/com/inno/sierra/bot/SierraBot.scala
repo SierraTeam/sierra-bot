@@ -36,7 +36,7 @@ abstract class SierraBot extends TelegramBot with Commands {
    onCommand("/info") {
     implicit msg => reply(info())
   }
-
+  
   /**
     * Handling the communication within the group is implemented here.
     * @param message
@@ -89,6 +89,7 @@ abstract class SierraBot extends TelegramBot with Commands {
         chat.id, user.username.get, ChatState.Start)
       "Nice to meet you, " + user.firstName + "! I can help" +
         " you to plan your activities. I'll try to be useful for you :)"
+
     } else {
       "Welcome back, " + user.firstName + "! I'm glad to see you again :) " +
         "How can I help you?"
@@ -109,25 +110,26 @@ abstract class SierraBot extends TelegramBot with Commands {
       // TODo: maybe we need to check that the event planned is in the future
       val now = Calendar.getInstance().getTime()
       args => {
-        val parametro = MutableList[String]()
+        val parameter = MutableList[String]()
         for (arg <- args) {
           print(arg) // TODO: change to log
           if (!arg.isEmpty && !arg.startsWith("/")) {
             println(" - param is added")
-            parametro += arg
+            parameter += arg
           }
         }
 
-        if (parametro.length != 4) {
+        if (parameter.length != 4) {
           return "Create a meeting requires 4 parameters date, hour, name and duration(min)"
         } else {
-          var date_meeting = parametro(0).concat(" ").concat(parametro(1))
+          var date_meeting = parameter(0).concat(" ").concat(parameter(1))
           val format = new java.text.SimpleDateFormat("yyyy-MM-dd")
           val simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm")
           val beginDate: Date = simpleDateFormat.parse(date_meeting)
 
+
           val ONE_MINUTE_IN_MILLIS = 60000
-          val duration = Integer.parseInt(parametro(3)) * ONE_MINUTE_IN_MILLIS
+          val duration = Integer.parseInt(parameter(3)) * ONE_MINUTE_IN_MILLIS
           val endDate = new Date(beginDate.getTime() + duration)
 
           val intersectedEvents = ChatSession.hasIntersections(
@@ -135,7 +137,7 @@ abstract class SierraBot extends TelegramBot with Commands {
           println(intersectedEvents) // TODO: to log
 
           if (intersectedEvents.isEmpty) {
-            val event = Event.create(msg.chat.id, beginDate, parametro(2), endDate)
+            val event = Event.create(msg.chat.id, beginDate, parameter(2), endDate)
             return "The event " + event + " is remembered. I will remind you ;)" // TODO: phrases in different file!
           } else {
             val stringBuilder = new StringBuilder(
