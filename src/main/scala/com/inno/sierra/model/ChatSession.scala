@@ -2,7 +2,6 @@ package com.inno.sierra.model
 
 import java.sql.Timestamp
 import java.util.Date
-
 import org.squeryl.KeyedEntity
 import org.squeryl.PrimitiveTypeMode._
 
@@ -32,10 +31,19 @@ case class ChatSession (
                          var chatState: Int
                        ) extends KeyedEntity[Long] {
 
+  def _chatState(chatState: ChatState.ChatState) = {
+    val state = chatState match {
+      case ChatState.Start => 1
+      case ChatState.CreateEvent => 2
+      case ChatState.EditEvent => 3
+    }
+  }
 }
 
 
 object ChatSession {
+  val DEFAULT_STATE = ChatState.Start
+
   def create(csid: Long, alias: String, isGroup: Boolean,
              chatState: ChatState.ChatState): ChatSession = {
     val state = chatState match {
@@ -57,6 +65,14 @@ object ChatSession {
     DbSchema.getAllChatSessions(ids)
   }
 
+  def getByChatSessionId(csid: Long) = {
+    DbSchema.getChatSessionByChatSessionId(csid)
+  }
+
+  def update(cs: ChatSession) = {
+    DbSchema.update[ChatSession](cs)
+  }
+
   def exists(id: Long): Boolean = {
     DbSchema.existsChatSession(id)
   }
@@ -67,7 +83,19 @@ object ChatSession {
     DbSchema.hasIntersections(csid, begin, end)
   }
 
-  def addUserToGroup(groupChatId: Long, csid: Long, alias: String) = {
+  def addUserToGroup(groupChatId: Long,
+                     memberChatId: Long, memberAlias: String) = {
+    val group = DbSchema.getChatSessionIdByChatId(groupChatId)
+      .getOrElse(
+        ChatSession.create(groupChatId, "", isGroup = true, DEFAULT_STATE)
+      )
+    val member = DbSchema.getChatSessionIdByChatId(memberChatId)
+      .getOrElse(
+        ChatSession.create(
+          memberChatId, memberAlias, isGroup = false, DEFAULT_STATE)
+      )
 
+    val gm = GroupMembers(group.id, member.id)
+    DbSchema.insert[GroupMembers](gm)
   }
 }

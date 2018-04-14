@@ -10,13 +10,14 @@ import org.squeryl.{Schema, Session, SessionFactory}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import java.util.Date
+import reflect.runtime.universe._
 
 import com.typesafe.scalalogging.LazyLogging
 
-object DbSchema extends Schema with LazyLogging{
+
+object DbSchema extends Schema with LazyLogging {
   private val conf = ConfigFactory.load()
   // -----Initialize a connection with DB
-
   val driver = conf.getString("db.driver")
   val adapter = driver match {
     case "h2" => {
@@ -44,7 +45,7 @@ object DbSchema extends Schema with LazyLogging{
   )
 
 
-  // -----Define tables
+  // -----Define tables-----
   val chatSessions = table[ChatSession]
   val events = table[Event]
   val csEvents = manyToManyRelation(chatSessions, events).
@@ -67,57 +68,64 @@ object DbSchema extends Schema with LazyLogging{
     e.endDate is (indexed, dbType("timestamp"))
   ))
 
-  // -----Methods
-  def insert(s: ChatSession): ChatSession = {
-    transaction {
-      chatSessions.insert(s)
+  // -----Methods-----
+  def insert[T](entity: T): T = {
+    val result = entity match {
+      case cs: ChatSession => transaction(chatSessions.insert(cs))
+      case e: Event => transaction(events.insert(e))
+      case cse: ChatSessionEvents => transaction(csEvents.insert(cse))
+      case gm: GroupMembers => transaction(groupMembers.insert(gm))
+      case _ => new IllegalArgumentException(
+        "the type " + entity.getClass + "is not known")
+    }
+    result.asInstanceOf[T]
+  }
+
+  def update[T](entity: T): Unit = {
+    entity match {
+      case cs: ChatSession => transaction(chatSessions.update(cs))
+      case e: Event => transaction(events.update(e))
+      //case cse: ChatSessionEvents => transaction(csEvents.update(cse))
+      //case gm: GroupMembers => transaction(groupMembers.update(gm))
+      case _ => new IllegalArgumentException(
+        "the type " + entity.getClass + "is not known")
     }
   }
 
-  def insert(e: Event): Event = {
-    transaction {
-      events.insert(e)
+  def getEntityById[T: TypeTag](id: Long): Option[T] = {
+    val result = typeOf[T] match {
+      case t if t =:= typeOf[ChatSession] =>
+      transaction(from(chatSessions)(s => where(s.id === id).select(s)))
     }
+    result.headOption.asInstanceOf[Option[T]]
   }
 
-  def insert(cse: ChatSessionEvents): ChatSessionEvents = {
-    transaction {
-      csEvents.insert(cse)
-    }
+  def getAll[T: TypeTag](ids: Option[List[Long]]): List[T] = {
+    val result =
+      if (ids.isEmpty) {
+        typeOf[T] match {
+          case t if t =:= typeOf[ChatSession] =>
+            transaction(from(chatSessions)(s => select(s)).toList)
+          case t if t =:= typeOf[Event] =>
+            transaction(from(events)(s => select(s)).toList)
+        }
+      } else {
+        val listBuffer = ListBuffer[T]()
+        typeOf[T] match {
+          case t if t =:= typeOf[ChatSession] => println("")
+        }
+      }
+
+    result.asInstanceOf[List[T]]
   }
 
-  def update(e: Event): Unit = {
-    transaction {
-      events.update(e)
-    }
-  }
-
-  def update(s: ChatSession): Unit = {
-    transaction {
-      chatSessions.update(s)
-    }
-  }
-
-  def deleteChatSession(id: Long): Unit = {
-    transaction {
-      chatSessions.deleteWhere(_.id === id)
-    }
-  }
-
-  def existsChatSession (csid: Long): Boolean = {
-    var result = mutable.Set[ChatSession]()
-
-    transaction {
-      from(chatSessions)(cs => where(cs.csid === csid).select(cs))
-        .foreach(cs => result += cs)
-      result
-    }
-    !result.isEmpty
+  def getChatSessionByChatSessionId(csid: Long) = {
+    transaction(from(chatSessions)(s => where(s.csid === csid).select(s)))
   }
 
   def getAllChatSessions(
                           ids: Option[mutable.Set[Long]]
-    ): mutable.Set[ChatSession] = {
+                        ): mutable.Set[ChatSession] = {
 
     val result = mutable.Set[ChatSession]()
 
@@ -158,6 +166,25 @@ object DbSchema extends Schema with LazyLogging{
     }
   }
 
+  def deleteChatSession(id: Long): Unit = {
+    transaction {
+      chatSessions.deleteWhere(_.id === id)
+    }
+  }
+
+  def existsChatSession (csid: Long): Boolean = {
+    var result = mutable.Set[ChatSession]()
+
+    transaction {
+      from(chatSessions)(cs => where(cs.csid === csid).select(cs))
+        .foreach(cs => result += cs)
+      result
+    }
+    !result.isEmpty
+  }
+
+
+
   def getAllEventsTillDate(date: Date, isNotified: Boolean = false): mutable.Set[Event] = {
     val stamp = new Timestamp(date.getTime)
     val result = mutable.Set[Event]()
@@ -171,7 +198,7 @@ object DbSchema extends Schema with LazyLogging{
 
   def getChatSessionIdByChatId(chatId: Long) = {
     transaction {
-      from(chatSessions)(cs => where(cs.csid === chatId).select(cs)).head
+      from(chatSessions)(cs => where(cs.csid === chatId).select(cs)).headOption
     }
   }
 
@@ -198,11 +225,7 @@ object DbSchema extends Schema with LazyLogging{
       logger.debug(result.toString)
       result
     }
-
   }
-
-  /*or
-  (e.beginDate.lt(endDate) and e.endDate.gt(endDate))*/
 
   /**
     * Initializes the database and fills it with test data.
@@ -228,4 +251,5 @@ object DbSchema extends Schema with LazyLogging{
     logger.debug("Chat sessions: " + ChatSession.get(None))
     logger.debug("Events: " + Event.get(None))
   }
+
 }

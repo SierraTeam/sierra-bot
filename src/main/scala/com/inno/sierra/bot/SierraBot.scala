@@ -30,7 +30,16 @@ abstract class SierraBot extends TelegramBot with Commands{
   var notifier: Cancellable = _
 
   onCommand("/start") {
-    implicit msg => reply(start(msg))
+    println("start command")
+    implicit msg => {
+      println("msg is: " + msg)
+      reply(start(msg))
+    }
+  }
+
+  onCommand("/subscribe") {
+    implicit msg => {reply(subscribe(msg))
+    }
   }
 
   onCommand("/keepinmind") {
@@ -96,17 +105,6 @@ abstract class SierraBot extends TelegramBot with Commands{
     val user = msg.from.get
     val chat = msg.chat
 
-    println(user)
-    println(chat)
-
-    if (!chat.`type`.equals(ChatType.Private)) {
-      println("it's a group")
-      println(user.id)
-      println(user.username)
-    } else {
-      println("not a group")
-    }
-
     if (!ChatSession.exists(chat.id)) {
       ChatSession.create(
         chat.id, user.username.get,
@@ -114,6 +112,18 @@ abstract class SierraBot extends TelegramBot with Commands{
       MessagesText.START_FIRST_TIME.format(user.firstName)
     } else {
       MessagesText.START_AGAIN.format(user.firstName)
+    }
+  }
+
+  def subscribe(msg: Message): String = {
+    val user = msg.from.get
+    val chat = msg.chat
+
+    if (!chat.`type`.equals(ChatType.Private)) {
+      ChatSession.addUserToGroup(chat.id, user.id, user.username.get)
+      MessagesText.SUBSCRIBE_DONE
+    } else {
+      MessagesText.SUBSCRIBE_ALREADY
     }
   }
 
