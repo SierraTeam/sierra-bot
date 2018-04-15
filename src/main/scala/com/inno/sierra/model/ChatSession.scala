@@ -10,9 +10,10 @@ import scala.collection.mutable
 
 object ChatState extends Enumeration {
     type ChatState = Value
-    val Start = Value(1, "Start")
-    val CreateEvent = Value(2, "CreateEvent")
-    val EditEvent = Value(3, "EditEvent")
+    val Started = Value(1, "Started")
+    val CreatingEventInputtingName = Value(2, "CreatingEventInputtingName")
+    val CreatingEventInputtingParams = Value(3, "CreatingEventInputtingParams")
+    val EditingEvent = Value(4, "EditingEvent")
   }
 
 /**
@@ -30,6 +31,12 @@ case class ChatSession (
                          var alias: String,
                          var isGroup: Boolean,
                          @Column("CHATSTATE") var _chatState: Int,
+                         var inputEventDatetime: Option[Timestamp] = None,
+                         var inputEventName: Option[String] = None,
+                         var inputEventDurationInMinutes: Option[Int] = None,
+                         var inputCalendarMessageId: Option[Int] = None,
+                         var inputTimepickerMessageId: Option[Int] = None,
+                         var inputDurationpickerMessageId: Option[Int] = None
                        ) extends KeyedEntity[Long] {
 
   def chatState: ChatState.ChatState = {
@@ -47,7 +54,7 @@ case class ChatSession (
 
 
 object ChatSession {
-  val DEFAULT_STATE = ChatState.Start
+  val DEFAULT_STATE = ChatState.Started
 
   def create(csid: Long, alias: String, isGroup: Boolean,
              chatState: ChatState.ChatState): ChatSession = {

@@ -1,17 +1,17 @@
 package com.inno.sierra.bot
 
+import java.sql.Timestamp
 import java.text.SimpleDateFormat
-import java.util.{Calendar, Date, GregorianCalendar}
+import java.util.{Calendar, Date, GregorianCalendar, TimeZone}
 
 import com.inno.sierra.model.{ChatSession, ChatState, Event}
 import info.mukel.telegrambot4s.api._
 import info.mukel.telegrambot4s.api.declarative.{Callbacks, Commands}
-import info.mukel.telegrambot4s.methods.{GetMe, SendMessage}
+import info.mukel.telegrambot4s.methods.{DeleteMessage, EditMessageReplyMarkup, GetMe, SendMessage}
 import info.mukel.telegrambot4s.models._
 import java.util.concurrent.Executors
 
 import akka.actor.{ActorSystem, Cancellable, Props}
-import info.mukel.telegrambot4s.methods.EditMessageReplyMarkup
 
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
@@ -107,7 +107,7 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
 
     if (!ChatSession.exists(chat.id)) {
       ChatSession.create(chat.id, user.username.get,
-        !chat.`type`.equals(ChatType.Private), ChatState.Start)
+        !chat.`type`.equals(ChatType.Private), ChatState.Started)
       MessagesText.START_FIRST_TIME.format(user.firstName)
 
     } else {
@@ -221,22 +221,10 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     }
   }
 
-  /**
-    * Chat message ID represents a reference to concrete message in some chat,
-    * so it is kinda unique identifier for a message.
-    *
-    * @param chatId
-    * @param messageId
-    */
-  case class ChatMessageId(chatId: Long, messageId: Int)
-
-  val currentShownDates: scala.collection.mutable.Map[ChatMessageId, (Int, Int)] = scala.collection.mutable.Map.empty[ChatMessageId, (Int, Int)]
-
-  val CALENDAR_DAY_TAG = "calendar-day"
+  val CALENDAR_DAY_TAG = "calendar-day-"
   def calendarDayTag(s: String): String = prefixTag(CALENDAR_DAY_TAG)(s)
 
   onCallbackWithTag("ignore") { implicit cbq =>
-    // Notification only shown to the user who pressed the button.
     ackCallback()
   }
 
@@ -245,12 +233,25 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     ackCallback()
 
     for {
+      msg <- cbq.message
+      chatSession <- ChatSession.getByChatId(msg.chat.id)
       data <- cbq.data
       Extractors.Int(dayOfMonth) = data
-      msg <- cbq.message
     } /* do */ {
 
-      val (year: Int, month: Int) = currentShownDates(ChatMessageId(msg.source, msg.messageId))
+      val (year: Int, month: Int) = chatSession.inputEventDatetime match {
+        case Some(date) =>
+          val calendar = Calendar.getInstance
+          calendar.setTime(date)
+          (calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH))
+        case None =>
+          throw new NoSuchElementException()
+      }
+
+      val inputEventDate = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+      inputEventDate.set(year, month, dayOfMonth)
+      chatSession.inputEventDatetime = Some(new Timestamp(inputEventDate.getTime.getTime))
+      chatSession.save()
 
       val dateStr = "%02d.%02d.%04d".format(dayOfMonth, month, year)
 
@@ -260,6 +261,21 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
           dateStr
         )
       )
+
+      val timepicker = createTimepicker()
+
+      request(
+        SendMessage(
+          ChatId(msg.source),
+          "Please choose the time for the event",
+          replyMarkup = Some(timepicker)
+        )
+      ).map { msg =>
+        chatSession.inputTimepickerMessageId = Some(msg.messageId)
+        chatSession.save()
+        msg
+      }
+
     }
   }
 
@@ -268,11 +284,19 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     ackCallback()
 
     for {
-      data <- cbq.data
       msg <- cbq.message
+      chatSession <- ChatSession.getByChatId(msg.chat.id)
+      data <- cbq.data
     } /* do */ {
 
-      val (year: Int, month: Int) = currentShownDates(ChatMessageId(msg.source, msg.messageId))
+      val (year: Int, month: Int) = chatSession.inputEventDatetime match {
+        case Some(date: Date) =>
+          val calendar = Calendar.getInstance
+          calendar.setTime(date)
+          (calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH))
+        case None =>
+          throw new NoSuchElementException()
+      }
 
       val (yearNew: Int, monthNew: Int) = data match {
         case "next" =>
@@ -287,15 +311,21 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
           }
       }
 
-      currentShownDates(ChatMessageId(msg.chat.id, msg.messageId)) = (yearNew, monthNew)
+      val calendar = Calendar.getInstance
+      val eventDatetime = chatSession.inputEventDatetime.getOrElse(Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime)
+      calendar.setTime(eventDatetime)
+      calendar.set(Calendar.YEAR, yearNew)
+      calendar.set(Calendar.MONTH, monthNew)
+      chatSession.inputEventDatetime = Some(new Timestamp(calendar.getTime.getTime))
+      chatSession.save()
 
-      val calendar = createCalendar(yearNew, monthNew)
+      val calendarMarkup = createCalendar(yearNew, monthNew)
 
       request(
         EditMessageReplyMarkup(
           Some(ChatId(msg.source)), // msg.chat.id
           Some(msg.messageId),
-          replyMarkup = Some(calendar)))
+          replyMarkup = Some(calendarMarkup)))
     }
   }
 
@@ -334,7 +364,7 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
           }
         )
       }
-    } toSeq
+    }.toSeq
     val footer = Seq(
       InlineKeyboardButton.callbackData("<", "month-previous"),
       InlineKeyboardButton.callbackData(" ", "ignore"),
@@ -356,58 +386,6 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
   }
   // scalastyle:on method.length
 
-  onCommand("/calendar") { implicit msg =>
-    val now = new GregorianCalendar
-    val year = now.get(Calendar.YEAR)
-    val month = now.get(Calendar.MONTH) + 1
-    val calendar = createCalendar(year, month)
-
-    reply("Please choose the date to conduct an event on", replyMarkup = Some(calendar)).map { msg =>
-
-      // Should we select current date automatically?
-      if (true) {
-        currentShownDates(ChatMessageId(msg.chat.id, msg.messageId)) = (year, month)
-        val dayOfMonth = now.get(Calendar.DAY_OF_MONTH)
-        val dateStr = "%02d.%02d.%04d".format(dayOfMonth, month, year)
-        request(
-          SendMessage(
-            ChatId(msg.source),
-            dateStr
-          )
-        )
-      }
-
-      msg
-    }
-  }
-
-  val currentShownTimepickers: scala.collection.mutable.Map[ChatMessageId, (Int, Int)] = scala.collection.mutable.Map.empty[ChatMessageId, (Int, Int)]
-
-  onCallbackWithTag("timepicker-") { implicit cbq =>
-    // Notification only shown to the user who pressed the button.
-    ackCallback()
-
-    for {
-      data <- cbq.data
-      msg <- cbq.message
-    } /* do */ {
-
-      val time = data.split('-').map(_.toInt)
-      val hour = time(0)
-      val minutes = time(1)
-      currentShownDates(ChatMessageId(msg.chat.id, msg.messageId)) = (hour, minutes)
-
-      val timeStr = "%02d:%02d".format(hour, minutes)
-
-      request(
-        SendMessage(
-          ChatId(msg.source),
-          timeStr
-        )
-      )
-    }
-  }
-
   def createTimepicker(): InlineKeyboardMarkup = {
 
     // scalastyle:off magic.number
@@ -424,29 +402,227 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     InlineKeyboardMarkup(timepickerButtons)
   }
 
-  onCommand("/timepicker") { implicit msg =>
-    val timepicker = createTimepicker()
+  onCallbackWithTag("timepicker-") { implicit cbq =>
+    // Notification only shown to the user who pressed the button.
+    ackCallback()
 
-    reply("Please choose the date to conduct an event on", replyMarkup = Some(timepicker)).map { msg =>
+    for {
+      msg <- cbq.message
+      chatSession <- ChatSession.getByChatId(msg.chat.id)
+      data <- cbq.data
+    } /* do */ {
 
-      // Should we select current time automatically?
-      if (true) {
-        val now = Calendar.getInstance()
-        now.add(Calendar.MINUTE, 31)
-        val hour = now.get(Calendar.HOUR_OF_DAY)
-        val minutes = (30 * Math.floor(now.get(Calendar.MINUTE) / 30.0)).toInt
-        currentShownDates(ChatMessageId(msg.chat.id, msg.messageId)) = (hour, minutes)
-        val timeStr = "%02d:%02d".format(hour, minutes)
+      val time = data.split('-').map(_.toInt)
+      val hour = time(0)
+      val minutes = time(1)
+
+      val calendar = Calendar.getInstance
+      val date = chatSession.inputEventDatetime.getOrElse(Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime)
+      calendar.setTime(date)
+      calendar.set(Calendar.HOUR, hour)
+      calendar.set(Calendar.MINUTE, minutes)
+      calendar.set(Calendar.SECOND, 0)
+      chatSession.inputEventDatetime = Some(new Timestamp(calendar.getTime.getTime))
+      chatSession.save()
+
+      val timeStr = "%02d:%02d".format(hour, minutes)
+
+      request(
+        SendMessage(
+          ChatId(msg.source),
+          timeStr
+        )
+      )
+
+      val durationpicker = createDurationpicker()
+
+      request(
+        SendMessage(
+          ChatId(msg.source),
+          "Please choose the time for the event",
+          replyMarkup = Some(durationpicker)
+        )
+      ).map { msg =>
+        chatSession.inputDurationpickerMessageId = Some(msg.messageId)
+        chatSession.save()
+        msg
+      }
+
+    }
+  }
+
+  val DURATIONS = List(
+    5 -> "5 min",
+    10 -> "10 min",
+    15 -> "15 min",
+    30 -> "30 min",
+    45 -> "45 min",
+    60 -> "1 hour",
+    90 -> "1.5 hours",
+    120 -> "2.0 hours",
+    180 -> "3.0 hours",
+    666 -> "are you sadist?"
+  )
+
+  def createDurationpicker(): InlineKeyboardMarkup = {
+
+    // scalastyle:off magic.number
+    val durationpickerButtons = DURATIONS.map { duration =>
+      InlineKeyboardButton.callbackData(
+        duration._2,
+        s"duration-${duration._1}"
+      )
+    }.toSeq.grouped(5).toSeq
+    // scalastyle:on magic.number
+
+    InlineKeyboardMarkup(durationpickerButtons)
+  }
+
+  onCallbackWithTag("duration-") { implicit cbq =>
+    // Notification only shown to the user who pressed the button.
+    ackCallback()
+
+    for {
+      msg <- cbq.message
+      chatSession <- ChatSession.getByChatId(msg.chat.id)
+      data <- cbq.data
+      Extractors.Int(durationInMinutes) = data
+    } /* do */ {
+
+      for {
+        durationInMinutesTuple <- DURATIONS.find(_._1 == durationInMinutes)
+      } /* do */ {
         request(
           SendMessage(
             ChatId(msg.source),
-            timeStr
+            durationInMinutesTuple._2
           )
         )
       }
 
-      msg
+      chatSession.inputEventDurationInMinutes = Some(durationInMinutes)
+      chatSession.save()
+
+      val calendar = Calendar.getInstance
+      calendar.setTimeInMillis(chatSession.inputEventDatetime.get.getTime)
+      val beginDate: Date = calendar.getTime
+
+      val ONE_MINUTE_IN_MILLIS = 60000
+      val duration = durationInMinutes * ONE_MINUTE_IN_MILLIS
+      val endDate = new Date(beginDate.getTime() + duration)
+
+      val intersectedEvents = ChatSession.hasIntersections(
+        msg.chat.id, beginDate, endDate)
+      logger.debug(intersectedEvents.toString)
+
+      val answer = if (intersectedEvents.isEmpty) {
+        val event = Event.create(msg.chat.id, beginDate, chatSession.inputEventName.get, endDate)
+
+        for {
+          inputCalendarMessageId <- chatSession.inputCalendarMessageId
+        } /* do */ {
+          request(
+            DeleteMessage(
+              ChatId(msg.source), // msg.chat.id
+              inputCalendarMessageId
+            )
+          )
+        }
+
+        for {
+          inputTimepickerMessageId <- chatSession.inputTimepickerMessageId
+        } /* do */ {
+          request(
+            DeleteMessage(
+              ChatId(msg.source), // msg.chat.id
+              inputTimepickerMessageId
+            )
+          )
+        }
+
+        for {
+          inputDurationpickerMessageId <- chatSession.inputDurationpickerMessageId
+        } /* do */ {
+          request(
+            DeleteMessage(
+              ChatId(msg.source), // msg.chat.id
+              inputDurationpickerMessageId
+            )
+          )
+        }
+
+        chatSession.chatState = ChatState.Started
+        chatSession.inputEventDatetime = None
+        chatSession.inputEventName = None
+        chatSession.inputEventDurationInMinutes = None
+        chatSession.inputCalendarMessageId = None
+        chatSession.inputTimepickerMessageId = None
+        chatSession.inputDurationpickerMessageId = None
+        chatSession.save()
+
+        "The event " + event + " is recorded. I will remind you ;)"
+      } else {
+        val stringBuilder = new StringBuilder(
+          "I'm sorry but this event intersects with another ones:\n ")
+        intersectedEvents.foreach(stringBuilder.append(_).append("\n"))
+        stringBuilder.toString()
+      }
+
+      request(
+        SendMessage(
+          ChatId(msg.source),
+          answer
+        )
+      )
+
     }
+  }
+
+  onCommand("/keepinmind2") { implicit msg =>
+    start(msg)
+
+    val chatSession = ChatSession.getByChatId(msg.chat.id).get
+    chatSession.chatState = ChatState.CreatingEventInputtingName
+    chatSession.inputEventDatetime = None
+    chatSession.inputEventName = None
+    chatSession.inputEventDurationInMinutes = None
+    chatSession.save()
+
+    reply("Alright, a new event. How are we going to call it? Please choose a name for an event.")
+  }
+
+  onMessage { implicit  msg =>
+
+    for {
+      chatSession <- ChatSession.getByChatId(msg.chat.id)
+      if chatSession.chatState == ChatState.CreatingEventInputtingName
+      _ <- msg.text
+      command <- Extractors.textTokens(msg).map(_.head)
+      if command != "/keepinmind2"
+    } /* do */ {
+      chatSession.inputEventName = msg.text
+      chatSession.chatState = ChatState.CreatingEventInputtingParams
+
+      val now = new GregorianCalendar
+      val year = now.get(Calendar.YEAR)
+      val month = now.get(Calendar.MONTH) + 1
+      var dayOfMonth = now.get(Calendar.DAY_OF_MONTH)
+
+      val inputEventDate = Calendar.getInstance()
+      inputEventDate.set(year, month, dayOfMonth)
+
+      chatSession.inputEventDatetime = Some(new Timestamp(inputEventDate.getTime.getTime))
+      chatSession.save()
+
+      val calendar = createCalendar(year, month)
+
+      reply("Good. Now let's choose a date for your event. Use the calendar widget to enter the planned date.", replyMarkup = Some(calendar)).map { msg =>
+        chatSession.inputCalendarMessageId = Some(msg.messageId)
+        chatSession.save()
+        msg
+      }
+    }
+
   }
 
 }
