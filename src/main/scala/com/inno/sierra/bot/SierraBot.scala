@@ -38,18 +38,26 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
   }
 
   onCommand("/subscribe") {
-    implicit msg => {reply(subscribe(msg))
+    implicit msg => {
+      reply(subscribe(msg))
+
     }
   }
 
   onCommand("/keepinmind") {
-    implicit msg => reply(keepInMind(msg))
+    implicit msg => {
+      reply(keepInMind(msg))
+    }
   }
 
    onCommand("/info") {
-    implicit msg => reply(info())
-  }
-  
+    implicit msg =>{
+      reply(info())
+    }
+   }
+
+
+
   /**
     * Handling the communication within the group is implemented here.
     * @param message message instance
@@ -155,27 +163,29 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
 
           if (!arg.isEmpty && !arg.startsWith("/")) {
 
-            def verifyParameter(x: Any,y:scala.util.matching.Regex) = x match {
-            //  case s: String =>  println(" - param match string : "+arg)
-            //  case TimeDuration(d) =>  println(" - duration only : "+d+arg)
-            //  case DateOnly(d) =>  println(" - date only : "+d+arg)
-            //  case TimeOnly(d) =>  println(" - time only : "+d+arg)
+            def verifyParameter(x: Any, y: scala.util.matching.Regex) = x match {
+              //  case s: String =>  println(" - param match string : "+arg)
+              //  case TimeDuration(d) =>  println(" - duration only : "+d+arg)
+              //  case DateOnly(d) =>  println(" - date only : "+d+arg)
+              //  case TimeOnly(d) =>  println(" - time only : "+d+arg)
               case
-                test:String if y.findFirstMatchIn(test).nonEmpty => println("Checked correct parameter: "+arg)
-              case _  =>   println("Wrong parameter: "+arg)
+                test: String if y.findFirstMatchIn(test).nonEmpty => println("Checked correct parameter: " + arg)
+              case _ => println("Wrong parameter: " + arg)
             }
-            verifyParameter(arg,listRegex(i));
-          //  val unMactchParamerter = verifyParameter(arg,listRegex(i));
-          //  if(unMactchParamerter == true){
-           //   return "Wrong format of parameter"
-         //   }
+
+            verifyParameter(arg, listRegex(i));
+            //  val unMactchParamerter = verifyParameter(arg,listRegex(i));
+            //  if(unMactchParamerter == true){
+            //   return "Wrong format of parameter"
+            //   }
 
 
-            i+= 1
-          logger.trace(arg)
+            i += 1
+            logger.trace(arg)
+          }
           if (!arg.isEmpty && !arg.startsWith("/")) {
             logger.trace(" - param is added")
-            parametro += arg
+            parameter += arg
 
           }
         }
