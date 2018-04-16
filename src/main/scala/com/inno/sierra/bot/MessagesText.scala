@@ -27,6 +27,15 @@ object MessagesText {
   val SUBSCRIBE_ALREADY: String =
     "You are already subscribed to the events in this chat ;)"
 
+  val KEEPINMIND_DONE: String =
+    "The event %s is recorded. I will remind you ;)"
+
+  val KEEPINMIND_INTERSECTIONS: String =
+    "I'm sorry but this event intersects with another ones:\n "
+
+  val KEEPINMIND_NOT_ENOUGH_PARAMS: String =
+    "Create an event requires 4 parameters date, hour, name and duration(min)"
+
   val ERROR_UNEXPTECTED: String =
     "I'm so sorry! It seems something went wrong, try again, please."
 }

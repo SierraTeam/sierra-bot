@@ -79,8 +79,8 @@ object ChatSession {
     DbSchema.update[ChatSession](cs)
   }
 
-  def exists(id: Long): Boolean = {
-    DbSchema.getEntityById[ChatSession](id).isDefined
+  def exists(csid: Long): Boolean = {
+    DbSchema.getChatSessionByChatId(csid).isDefined
   }
 
   def hasIntersections(csid: Long, beginDate: Date, endDate: Date) = {

@@ -1,14 +1,19 @@
 package com.inno.sierra.bot.commands
 
-import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.{Calendar, Date}
 
 import com.inno.sierra.bot.MessagesText
+import com.inno.sierra.model.{ChatSession, Event}
 import info.mukel.telegrambot4s.api.Extractors
 import info.mukel.telegrambot4s.models.Message
 
 import scala.collection.mutable
+import scala.collection.mutable.MutableList
+import com.typesafe.scalalogging.LazyLogging
 
-object KeepInMind {
+
+object KeepInMind extends LazyLogging {
   val dateRegex = """([0-9]{2}.[0-9]{2}.[0-9]{4})"""
   val timeRegex = """([0-9]{2}:[0-9]{2})"""
   var nameRex = """([A-Za-z0-9]{1,30})"""
@@ -19,79 +24,64 @@ object KeepInMind {
   val TimeDuration = duration.r
 
 
+  def verifyParameter(x: Any, y: scala.util.matching.Regex) = x match {
+    //  case s: String =>  println(" - param match string : "+arg)
+    //  case TimeDuration(d) =>  println(" - duration only : "+d+arg)
+    //  case DateOnly(d) =>  println(" - date only : "+d+arg)
+    //  case TimeOnly(d) =>  println(" - time only : "+d+arg)
+    case
+      test: String if y.findFirstMatchIn(test).nonEmpty => logger.debug("Checked correct parameter: " + x)
+    case _ => logger.debug("Wrong parameter: " + x)
+  }
+
   def execute(msg: Message): String = {
-    val args = Extractors.commandArguments(msg)
+    val args = Extractors.commandArguments(msg).getOrElse(
+      return MessagesText.KEEPINMIND_NOT_ENOUGH_PARAMS
+    )
+    val regex = MutableList[String]()
 
-    Start.execute(msg)
+    var i = 0
+    var listRegex = List(DateOnly,TimeOnly,TimeDuration,NameMeeting)
+    for (arg <- args) {
+      logger.trace(arg)
+      if (!arg.isEmpty && !arg.startsWith("/")) {
+        verifyParameter(arg, listRegex(i))
+        //  val unMactchParamerter = verifyParameter(arg,listRegex(i));
+        //  if(unMactchParamerter == true){
+        //   return "Wrong format of parameter"
+        //   }
+        i += 1
+        logger.trace(arg)
+      }
+    }
 
-    // TODo: maybe we need to check that the event planned is in the future
-    val now = Calendar.getInstance().getTime()
+    if (args.length != 4) {
+      MessagesText.KEEPINMIND_NOT_ENOUGH_PARAMS
 
-    val parameter = mutable.MutableList[String]()
-            val regex = mutable.MutableList[String]()
+    } else {
+      Start.execute(msg)
 
-            var i = 0;
-            var listRegex = List(DateOnly, TimeOnly, TimeDuration, NameMeeting)
-            for (arg <- args) {
+      var date_meeting = args(0).concat(" ").concat(args(1))
+      val simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm")
+      val beginDate: Date = simpleDateFormat.parse(date_meeting)
 
+      val ONE_MINUTE_IN_MILLIS = 60000
+      val duration = Integer.parseInt(args(3)) * ONE_MINUTE_IN_MILLIS
+      val endDate = new Date(beginDate.getTime() + duration)
 
-              if (!arg.isEmpty && !arg.startsWith("/")) {
+      val intersectedEvents = ChatSession.hasIntersections(
+        msg.chat.id, beginDate, endDate)
+      logger.debug(intersectedEvents.toString)
 
-                def verifyParameter(x: Any, y: scala.util.matching.Regex) = x match {
-                  //  case s: String =>  println(" - param match string : "+arg)
-                  //  case TimeDuration(d) =>  println(" - duration only : "+d+arg)
-                  //  case DateOnly(d) =>  println(" - date only : "+d+arg)
-                  //  case TimeOnly(d) =>  println(" - time only : "+d+arg)
-                  case
-                    test: String if y.findFirstMatchIn(test).nonEmpty => println("Checked correct parameter: " + arg)
-                  case _ => println("Wrong parameter: " + arg)
-                }
-
-                verifyParameter(arg, listRegex(i));
-                //  val unMactchParamerter = verifyParameter(arg,listRegex(i));
-                //  if(unMactchParamerter == true){
-                //   return "Wrong format of parameter"
-                //   }
-
-
-                i += 1
-                logger.trace(arg)
-                if (!arg.isEmpty && !arg.startsWith("/")) {
-                  logger.trace(" - param is added")
-                  //parametro += arg
-
-                }
-              }
-
-              if (parameter.length != 4) {
-                return "Create a meeting requires 4 parameters date, hour, name and duration(min)"
-              } else {
-                var date_meeting = parameter(0).concat(" ").concat(parameter(1))
-                val format = new java.text.SimpleDateFormat("yyyy-MM-dd")
-                val simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm")
-                val beginDate: Date = simpleDateFormat.parse(date_meeting)
-
-                val ONE_MINUTE_IN_MILLIS = 60000
-                val duration = Integer.parseInt(parameter(3)) * ONE_MINUTE_IN_MILLIS
-                val endDate = new Date(beginDate.getTime() + duration)
-
-                val intersectedEvents = ChatSession.hasIntersections(
-                  msg.chat.id, beginDate, endDate)
-                logger.debug(intersectedEvents.toString)
-
-                if (intersectedEvents.isEmpty) {
-                  val event = Event.create(msg.chat.id, beginDate, parameter(2), endDate)
-                  return "The event " + event + " is recorded. I will remind you ;)" // TODO: phrases in different file!
-                } else {
-                  val stringBuilder = new StringBuilder(
-                    "I'm sorry but this event intersects with another ones:\n ")
-                  intersectedEvents.foreach(stringBuilder.append(_).append("\n"))
-                  return stringBuilder.toString()
-                }
-              }
-            }
-          }*/
-    return MessagesText.ERROR_UNEXPTECTED
-    //    }
+      if (intersectedEvents.isEmpty) {
+        val event = Event.create(msg.chat.id, beginDate, args(2), endDate)
+        MessagesText.KEEPINMIND_DONE.format(event)
+      } else {
+        val stringBuilder = new StringBuilder(
+          MessagesText.KEEPINMIND_INTERSECTIONS)
+        intersectedEvents.foreach(stringBuilder.append(_).append("\n"))
+        stringBuilder.toString()
+      }
+    }
   }
 }
