@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat
 import java.util.{Calendar, Date, GregorianCalendar, TimeZone}
 
 import com.inno.sierra.model.{ChatSession, ChatState, Event}
+import com.inno.sierra.bot.commands._
 import info.mukel.telegrambot4s.api._
 import info.mukel.telegrambot4s.api.declarative.{Callbacks, Commands}
 import info.mukel.telegrambot4s.methods.{DeleteMessage, EditMessageReplyMarkup, GetMe, SendMessage}
@@ -33,31 +34,22 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     println("start command")
     implicit msg => {
       println("msg is: " + msg)
-      reply(start(msg))
+      reply(Start.execute(msg))
     }
   }
 
   onCommand("/subscribe") {
-    implicit msg => {
-      reply(subscribe(msg))
-
-    }
+    implicit msg => reply(Subscribe.execute(msg))
   }
 
   onCommand("/keepinmind") {
-    implicit msg => {
-      reply(keepInMind(msg))
-    }
+    implicit msg => reply(KeepInMind.execute(msg))
   }
 
    onCommand("/info") {
-    implicit msg =>{
-      reply(info())
-    }
-   }
-
-
-
+    implicit msg => reply(Info.execute(msg))
+  }
+  
   /**
     * Handling the communication within the group is implemented here.
     * @param message message instance
@@ -69,15 +61,15 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
       if (message.chat.`type` == ChatType.Group) {
         if (text.startsWith(botName)) {
           if (text.contains("/info")) {
-            request(SendMessage(message.source, info))
+            request(SendMessage(message.source, Info.execute(message)))
           } else if (text.contains("/start")) {
-            request(SendMessage(message.source, start(message)))
+            request(SendMessage(message.source, Start.execute(message)))
           } else if (text.contains("/keepinmind")) {
-            request(SendMessage(message.source, keepInMind(message)))
+            request(SendMessage(message.source, KeepInMind.execute(message)))
           } else {
             request(SendMessage(message.source, "I'm sorry, it seems I can't understand you -_- " +
               "Let me explain what I can do"))
-            request(SendMessage(message.source, info))
+            request(SendMessage(message.source, Info.execute(message)))
           }
         }
       } else {

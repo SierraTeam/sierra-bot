@@ -67,8 +67,8 @@ object ChatSession {
     *            for all existing if None.
     * @return - mutable set of chat sessions.
     */
-  def get(ids: Option[mutable.Set[Long]]) = {
-    DbSchema.getAllChatSessions(ids)
+  def getAll(ids: Option[List[Long]]) = {
+    DbSchema.getAll[ChatSession](ids)
   }
 
   def getByChatId(csid: Long) = {
@@ -80,7 +80,7 @@ object ChatSession {
   }
 
   def exists(id: Long): Boolean = {
-    DbSchema.existsChatSession(id)
+    DbSchema.getEntityById[ChatSession](id).isDefined
   }
 
   def hasIntersections(csid: Long, beginDate: Date, endDate: Date) = {

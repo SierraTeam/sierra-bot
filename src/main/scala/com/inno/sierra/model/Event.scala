@@ -39,11 +39,11 @@ object Event {
     DbSchema.insert(cse)
   }
 
-  def get(ids: Option[mutable.Set[Long]]): mutable.Set[Event] = {
-    DbSchema.getAllEvents(ids)
+  def get(ids: Option[List[Long]]) = {
+    DbSchema.getAll[Event](ids)
   }
 
-  def getEarliest(tillDate: Date): mutable.Set[Event] = {
+  def getEarliest(tillDate: Date) = {
     DbSchema.getAllEventsTillDate(tillDate)
   }
 }
