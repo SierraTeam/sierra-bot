@@ -27,6 +27,12 @@ object MessagesText {
   val SUBSCRIBE_ALREADY: String =
     "You are already subscribed to the events in this chat ;)"
 
+  val UNSUBSCRIBE_DONE: String =
+    "Now you will NOT be informed about the events in this group :)"
+
+  val UNSUBSCRIBE_CANNOT: String =
+    "You cannot unsubscribe in private chats. You need to do better to get rid of me ;)"
+
   val KEEPINMIND_DONE: String =
     "The event %s is recorded. I will remind you ;)"
 
@@ -51,6 +57,12 @@ object MessagesText {
   val KEEPINMIND_WRONG_FORMAT_PARAM4: String =
     "The duration, fourth parameter should be a number"
 
+  val NOTIFICATION: String =
+    "I want to remind you that you have an event '%s' at %s"
+
   val ERROR_UNEXPTECTED: String =
     "I'm so sorry! It seems something went wrong, try again, please."
+
+  val NO_EVENTS_FOUND: String =
+    "There is no upcoming events recorded for you."
 }

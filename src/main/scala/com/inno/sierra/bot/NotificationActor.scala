@@ -1,7 +1,7 @@
 package com.inno.sierra.bot
 
 import akka.actor.Actor
-import com.inno.sierra.model.{DbSchema, Event}
+import com.inno.sierra.model.{ChatSession, DbSchema, Event}
 import com.typesafe.scalalogging.LazyLogging
 
 class NotificationActor(bot: SierraBot) extends Actor with LazyLogging {
@@ -12,9 +12,18 @@ class NotificationActor(bot: SierraBot) extends Actor with LazyLogging {
 
     logger.debug("Notifying about " + event.name + ", chatsessionid: " + chatSession.csid)
 
-    // TODO: handle the group in a different way
-    val notification = "I want to remind you that you have an event '" +
-      event.name + "' at " + event.beginDate
+    val baseNotification = MessagesText.NOTIFICATION
+      .format(event.name, event.beginDate)
+
+    val notification =
+      if (!chatSession.isGroup) {
+        baseNotification
+      } else {
+        val members = ChatSession.getMembersOfGroup(chatSession.csid)
+        val sb = new StringBuffer()
+        members.foreach(m => sb.append("@" + m.alias + " "))
+        sb.toString + baseNotification
+      }
 
     bot.sendMessage(chatSession.csid, notification)
 
