@@ -1,18 +1,16 @@
 package com.inno.sierra.model
 
 import java.sql.Timestamp
+import java.util.Date
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.LazyLogging
 import org.squeryl.PrimitiveTypeMode._
 import org.squeryl.adapters.{H2Adapter, PostgreSqlAdapter}
 import org.squeryl.{Schema, Session, SessionFactory}
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import java.util.Date
-import reflect.runtime.universe._
-
-import com.typesafe.scalalogging.LazyLogging
+import scala.reflect.runtime.universe._
 
 
 object DbSchema extends Schema with LazyLogging {
@@ -54,7 +52,7 @@ object DbSchema extends Schema with LazyLogging {
   )
   val groupMembers = manyToManyRelation(chatSessions, chatSessions).
     via[GroupMembers](
-    (gr, mem, grm ) => (grm.groupId === gr.id, grm.memberId === mem.id)
+    (gr, mem, grm) => (grm.groupId === gr.id, grm.memberId === mem.id)
   )
 
   on(chatSessions)(s => declare(
@@ -63,15 +61,16 @@ object DbSchema extends Schema with LazyLogging {
   ))
 
   on(events)(e => declare(
-    e.beginDate is (indexed, dbType("timestamp")),
+    e.beginDate is(indexed, dbType("timestamp")),
     e.name is indexed,
-    e.endDate is (indexed, dbType("timestamp"))
+    e.endDate is(indexed, dbType("timestamp"))
   ))
 
 
   // -----Methods-----
   /**
     * Returns the entity by its id (in the database).
+    *
     * @param id id of the entity
     * @tparam T type of the entity
     * @return Option[T]
@@ -87,7 +86,8 @@ object DbSchema extends Schema with LazyLogging {
   /**
     * Returns the list of entities by the provided list of ids.
     * If no ids provided then all the entities are returned.
-    * @param ids  optional list of ids
+    *
+    * @param ids optional list of ids
     * @tparam T type of the entity
     * @return List[T]
     */
@@ -109,6 +109,7 @@ object DbSchema extends Schema with LazyLogging {
 
   /**
     * Inserts the entity into the database.
+    *
     * @param entity entity
     * @tparam T type of the entity
     * @return the inserted entity
@@ -127,6 +128,7 @@ object DbSchema extends Schema with LazyLogging {
 
   /**
     * Updates the entity in the database.
+    *
     * @param entity entity
     * @tparam T type of the entity
     */
@@ -143,6 +145,7 @@ object DbSchema extends Schema with LazyLogging {
 
   /**
     * Deletes the entity by its id.
+    *
     * @param id id of the entity
     * @tparam T type of the entity
     */
@@ -160,6 +163,21 @@ object DbSchema extends Schema with LazyLogging {
       from(events)(e =>
         where(e.isNotified === false and e.beginDate.lt(stamp))
           .select(e)).toList
+    }
+  }
+
+  def getAllUpcomingEventsForUser(csid: Long) = {
+    val beginDate = new Timestamp(new Date getTime)
+    val result = ListBuffer[Event]()
+    transaction {
+      from(events, csEvents, chatSessions)((e, cse, cs) =>
+        where(
+          cse.eventId === e.id and cse.chatSessionId === cs.id and cs.csid === csid and
+            e.beginDate.gt(beginDate)
+        ).select(e))
+        .foreach(e => result += e)
+      logger.debug(result.toString)
+      result
     }
   }
 
@@ -183,10 +201,10 @@ object DbSchema extends Schema with LazyLogging {
       from(events, csEvents, chatSessions)((e, cse, cs) =>
         where(
           cse.eventId === e.id and cse.chatSessionId === cs.id and cs.csid === csid and
-          ((e.beginDate.lt(beginDate) and e.endDate.gt(beginDate)) or
-            (e.beginDate.lt(endDate) and e.endDate.gt(endDate)) or
-            (e.beginDate.gt(beginDate) and e.endDate.lt(endDate))
-          )
+            ((e.beginDate.lt(beginDate) and e.endDate.gt(beginDate)) or
+              (e.beginDate.lt(endDate) and e.endDate.gt(endDate)) or
+              (e.beginDate.gt(beginDate) and e.endDate.lt(endDate))
+              )
         ).select(e))
         .foreach(e => result += e)
       logger.debug(result.toString)

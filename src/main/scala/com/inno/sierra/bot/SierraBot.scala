@@ -46,8 +46,12 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     implicit msg => reply(KeepInMind.execute(msg))
   }
 
-   onCommand("/info") {
+  onCommand("/info") {
     implicit msg => reply(Info.execute(msg))
+  }
+
+  onCommand("/myevents") {
+    implicit msg => reply(MyEvents.execute(msg))
   }
   
   /**

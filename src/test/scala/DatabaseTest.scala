@@ -13,8 +13,8 @@ class DatabaseTest extends FlatSpec with MockFactory with Matchers {
 
     DbSchema.init()
 
-    val chatSessionsInserted = List(ChatSession.create(101, "test1", false, ChatState.Started),
-      ChatSession.create(1010, "test2", false, ChatState.Started))
+    val chatSessionsInserted = List(ChatSession.create(101, "test1", isGroup = false, ChatState.Started),
+      ChatSession.create(1010, "test2", isGroup = false, ChatState.Started))
     val chatSessionsRetrieved = DbSchema.getAll[ChatSession](None)
     assert(chatSessionsInserted.forall(chatSessionsRetrieved.contains(_)) &&
       chatSessionsInserted.size == chatSessionsRetrieved.size)
@@ -24,8 +24,8 @@ class DatabaseTest extends FlatSpec with MockFactory with Matchers {
 
     DbSchema.init()
 
-    val chatSessionsInserted = List(ChatSession.create(101, "test1", false, ChatState.Started),
-      ChatSession.create(1010, "test2", false, ChatState.Started))
+    val chatSessionsInserted = List(ChatSession.create(101, "test1", isGroup = false, ChatState.Started),
+      ChatSession.create(1010, "test2", isGroup = false, ChatState.Started))
     val chatSessionsRetrieved = ChatSession.getAll(None)
     assert(chatSessionsInserted.forall(chatSessionsRetrieved.contains(_)) &&
       chatSessionsInserted.size == chatSessionsRetrieved.size)
@@ -33,8 +33,8 @@ class DatabaseTest extends FlatSpec with MockFactory with Matchers {
 
   it should "insert and retrieve events by event companion object" in {
     DbSchema.init()
-    ChatSession.create(1, "test1", false, ChatState.Started)
-    ChatSession.create(2, "test2", false, ChatState.Started)
+    ChatSession.create(1, "test1", isGroup = false, ChatState.Started)
+    ChatSession.create(2, "test2", isGroup = false, ChatState.Started)
 
     val eventsInserted = List(Event.create(1, new Date(), "test1", new Date()),
       Event.create(2, new Date(), "test1", new Date()))

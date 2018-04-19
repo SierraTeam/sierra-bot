@@ -38,4 +38,7 @@ object MessagesText {
 
   val ERROR_UNEXPTECTED: String =
     "I'm so sorry! It seems something went wrong, try again, please."
+
+  val NO_EVENTS_FOUND: String =
+    "There is no upcoming events recorded for you."
 }
