@@ -31,8 +31,12 @@ case class ChatSession (
                          var alias: String,
                          var isGroup: Boolean,
                          @Column("CHATSTATE") var _chatState: Int,
-                         var inputEventDatetime: Option[Timestamp] = None,
                          var inputEventName: Option[String] = None,
+                         var inputEventYear: Option[Int] = None,
+                         var inputEventMonth: Option[Int] = None,
+                         var inputEventDay: Option[Int] = None,
+                         var inputEventHour: Option[Int] = None,
+                         var inputEventMinutes: Option[Int] = None,
                          var inputEventDurationInMinutes: Option[Int] = None,
                          var inputCalendarMessageId: Option[Int] = None,
                          var inputTimepickerMessageId: Option[Int] = None,
@@ -47,6 +51,40 @@ case class ChatSession (
     _chatState = chatStateNew.id
   }
   // scalastyle:on method.name
+
+  def resetInputs(): Unit = {
+    inputEventName = None
+    inputEventYear = None
+    inputEventMonth = None
+    inputEventDay = None
+    inputEventHour = None
+    inputEventMinutes = None
+    inputEventDurationInMinutes = None
+    inputCalendarMessageId = None
+    inputTimepickerMessageId = None
+    inputDurationpickerMessageId = None
+  }
+
+  def getEventDate: String = {
+    val eventDateStr = for {
+      year <- inputEventYear
+      month <- inputEventMonth
+      dayOfMonth <- inputEventDay
+      result = "%02d.%02d.%04d".format(dayOfMonth, month, year)
+    } yield result
+
+    eventDateStr.getOrElse("None")
+  }
+
+  def getEventTime: String = {
+    val eventTimeStr = for {
+      hour <- inputEventHour
+      minutes <- inputEventMinutes
+      result = "%02d:%02d".format(hour, minutes)
+    } yield result
+
+    eventTimeStr.getOrElse("None")
+  }
 
   def save() = DbSchema.update(this)
 
