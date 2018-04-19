@@ -36,6 +36,21 @@ object MessagesText {
   val KEEPINMIND_NOT_ENOUGH_PARAMS: String =
     "Create an event requires 4 parameters date, hour, name and duration(min)"
 
+  val KEEPINMIND_CORRECT_PARAMS: String =
+    "Try again with correct parameters"
+
+  val KEEPINMIND_WRONG_FORMAT_PARAM1: String =
+    "The date, first parameter should follow the format dd.mm.YYYY"
+
+  val KEEPINMIND_WRONG_FORMAT_PARAM2: String =
+    "The hour, second parameter should follow the format HH:MM"
+
+  val KEEPINMIND_WRONG_FORMAT_PARAM3: String =
+    "The name, third parameter should follow the format letters and/or numbers"
+
+  val KEEPINMIND_WRONG_FORMAT_PARAM4: String =
+    "The duration, fourth parameter should be a number"
+
   val ERROR_UNEXPTECTED: String =
     "I'm so sorry! It seems something went wrong, try again, please."
 }
