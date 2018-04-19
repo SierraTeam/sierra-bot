@@ -136,7 +136,7 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
       }
 
       val inputEventDate = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-      inputEventDate.set(year, month, dayOfMonth)
+      inputEventDate.set(year, month - 1, dayOfMonth)
       chatSession.inputEventDatetime = Some(new Timestamp(inputEventDate.getTime.getTime))
       chatSession.save()
 
