@@ -14,26 +14,27 @@ import com.typesafe.scalalogging.LazyLogging
 
 
 object KeepInMind extends LazyLogging {
-  val dateRegex = """([0-9]{2}.[0-9]{2}.[0-9]{4})"""
+  val dateRegex = """([0-9]{1,2}[.][0-9]{1,2}[.][0-9]{4})"""
   val timeRegex = """([0-9]{2}:[0-9]{2})"""
   var nameRex = """([A-Za-z0-9]{1,30})"""
-  val duration = """([0-9]{0,4})"""
+  val duration = """([0-9]{1,4})"""
   val DateOnly = dateRegex.r
   val TimeOnly = timeRegex.r
   val NameMeeting = nameRex.r
   val TimeDuration = duration.r
+  var regexError = 0;
 
 
-  def verifyParameter(x: Any, y: scala.util.matching.Regex) = x match {
+  def verifyParameter(x: Any, y: scala.util.matching.Regex,z: Integer) = x match {
     //  case s: String =>  println(" - param match string : "+arg)
     //  case TimeDuration(d) =>  println(" - duration only : "+d+arg)
     //  case DateOnly(d) =>  println(" - date only : "+d+arg)
     //  case TimeOnly(d) =>  println(" - time only : "+d+arg)
     case
-      test: String if y.findFirstMatchIn(test).nonEmpty => logger.debug("Checked correct parameter: " + x)
-    case _ => logger.debug("Wrong parameter: " + x)
+      test: String if y.findAllMatchIn(test).nonEmpty => logger.debug("Checked correct parameter: " +test)
+    case _ => regexError = z;
   }
-
+//MessagesText.KEEPINMIND_WRONG_FORMAT_PARAMS
   def execute(msg: Message): String = {
     val args = Extractors.commandArguments(msg).getOrElse(
       return MessagesText.KEEPINMIND_NOT_ENOUGH_PARAMS
@@ -41,11 +42,15 @@ object KeepInMind extends LazyLogging {
     val regex = MutableList[String]()
 
     var i = 0
-    var listRegex = List(DateOnly,TimeOnly,TimeDuration,NameMeeting)
+    var indexError = 0;
+    var noError = 0;
+    var listRegex = List(DateOnly,TimeOnly,NameMeeting,TimeDuration)
     for (arg <- args) {
       logger.trace(arg)
       if (!arg.isEmpty && !arg.startsWith("/")) {
-        verifyParameter(arg, listRegex(i))
+        logger.trace(listRegex(i).toString());
+        indexError = i+1
+        verifyParameter(arg, listRegex(i),indexError)
         //  val unMactchParamerter = verifyParameter(arg,listRegex(i));
         //  if(unMactchParamerter == true){
         //   return "Wrong format of parameter"
@@ -55,10 +60,27 @@ object KeepInMind extends LazyLogging {
       }
     }
 
-    if (args.length != 4) {
-      MessagesText.KEEPINMIND_NOT_ENOUGH_PARAMS
 
-    } else {
+    logger.debug("error regex: " +regexError)
+
+   val resultMatch =  regexError match {
+      case 1 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM1
+      case 2 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM2
+      case 3 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM3
+      case 4 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM4;
+      case _ => noError = 1; "";
+    }
+
+
+    if (resultMatch != ""){
+      resultMatch.toString
+     // logger.debug("mensagem de erro regex: " )
+
+    } else
+     if (args.length != 4) {
+      MessagesText.KEEPINMIND_NOT_ENOUGH_PARAMS;
+
+    }else  {
       Start.execute(msg)
 
       var date_meeting = args(0).concat(" ").concat(args(1))
