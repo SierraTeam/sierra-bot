@@ -12,8 +12,10 @@ object ChatState extends Enumeration {
     type ChatState = Value
     val Started = Value(1, "Started")
     val CreatingEventInputtingName = Value(2, "CreatingEventInputtingName")
-    val CreatingEventInputtingParams = Value(3, "CreatingEventInputtingParams")
-    val EditingEvent = Value(4, "EditingEvent")
+    val CreatingEventInputtingDate = Value(3, "CreatingEventInputtingDate")
+    val CreatingEventInputtingTime = Value(4, "CreatingEventInputtingTime")
+    val CreatingEventInputtingDuration = Value(5, "CreatingEventInputtingDuration")
+    val EditingEvent = Value(6, "EditingEvent")
   }
 
 /**

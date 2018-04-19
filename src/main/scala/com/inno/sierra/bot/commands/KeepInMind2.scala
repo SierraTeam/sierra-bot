@@ -28,34 +28,47 @@ object KeepInMind2 extends LazyLogging {
 
     for {
       chatSession <- ChatSession.getByChatId(msg.chat.id)
-      if chatSession.chatState == ChatState.CreatingEventInputtingName
       _ <- msg.text
       command <- Extractors.textTokens(msg).map(_.head)
       if command != "/keepinmind2"
     } /* do */ {
-      chatSession.inputEventName = msg.text
-      chatSession.chatState = ChatState.CreatingEventInputtingParams
-
-      val now = new GregorianCalendar
-      val year = now.get(Calendar.YEAR)
-      val month = now.get(Calendar.MONTH) + 1
-      val dayOfMonth = now.get(Calendar.DAY_OF_MONTH)
-
-      chatSession.inputEventYear = Some(year)
-      chatSession.inputEventMonth = Some(month)
-      chatSession.inputEventDay = Some(dayOfMonth)
-      chatSession.save()
-
-      val calendar = createCalendar(year, month)
-
-      bot.reply(
-        "Good. Now let's choose a date for your event. Use the calendar widget to enter the planned date.",
-        replyMarkup = Some(calendar)
-      ).map { msg =>
-        chatSession.inputCalendarMessageId = Some(msg.messageId)
-        chatSession.save()
-        msg
+      chatSession.chatState match {
+        case ChatState.CreatingEventInputtingName =>
+          onMessageEventName(bot, chatSession)
+        case ChatState.CreatingEventInputtingDate =>
+          onMessageEventDate(bot, chatSession)
+        case ChatState.CreatingEventInputtingTime =>
+          onMessageEventTime(bot, chatSession)
+        case ChatState.CreatingEventInputtingDuration =>
+          onMessageEventDuration(bot, chatSession)
       }
+    }
+
+  }
+
+  def onMessageEventName(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
+    chatSession.inputEventName = msg.text
+
+    val now = new GregorianCalendar
+    val year = now.get(Calendar.YEAR)
+    val month = now.get(Calendar.MONTH) + 1
+    val dayOfMonth = now.get(Calendar.DAY_OF_MONTH)
+
+    chatSession.inputEventYear = Some(year)
+    chatSession.inputEventMonth = Some(month)
+    chatSession.inputEventDay = Some(dayOfMonth)
+    chatSession.chatState = ChatState.CreatingEventInputtingDate
+    chatSession.save()
+
+    val calendar = createCalendar(year, month)
+
+    bot.reply(
+      "Good. Now let's choose a date for your event. Use the calendar widget to enter the planned date.",
+      replyMarkup = Some(calendar)
+    ).map { msg =>
+      chatSession.inputCalendarMessageId = Some(msg.messageId)
+      chatSession.save()
+      msg
     }
 
   }
@@ -164,6 +177,7 @@ object KeepInMind2 extends LazyLogging {
     }
   }
 
+  // scalastyle:off method.length
   def onCallbackWithTagCalendarDay(bot: SierraBot)(implicit cbq: CallbackQuery, ec: ExecutionContext): Unit = {
     // Notification only shown to the user who pressed the button.
     bot.ackCallback()
@@ -190,31 +204,60 @@ object KeepInMind2 extends LazyLogging {
       chatSession.inputEventDay = Some(dayOfMonth)
       chatSession.save()
 
-      bot.request(
-        SendMessage(
-          ChatId(msg.source),
-          chatSession.getEventDate
-        )
-      ).flatMap { msg =>
-
-        val timepicker = createTimepicker()
-
-        bot.request(
-          SendMessage(
-            ChatId(msg.source),
-            "Please choose the time for the event",
-            replyMarkup = Some(timepicker)
-          )
-        )
-
-      }.map { msg =>
-        chatSession.inputTimepickerMessageId = Some(msg.messageId)
-        chatSession.save()
-        msg
-      }
+      implicit val message: Message = msg
+      proceedToTimepicker(bot, chatSession)
 
     }
   }
+  // scalastyle:on method.length
+
+  def onMessageEventDate(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
+
+    // TODO: here should be preprocessing logic from /keepinmind
+    val text = msg.text.get.split('.')
+    chatSession.inputEventDay = Some(text(0).toInt)
+    chatSession.inputEventMonth = Some(text(1).toInt)
+    chatSession.inputEventYear = Some(text(2).toInt)
+    chatSession.save()
+
+    proceedToTimepicker(bot, chatSession)
+
+  }
+
+  def proceedToTimepicker(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
+
+    if (chatSession.chatState != ChatState.CreatingEventInputtingDate) {
+      return
+    }
+
+    chatSession.chatState = ChatState.CreatingEventInputtingTime
+    chatSession.save()
+
+    bot.request(
+      SendMessage(
+        ChatId(msg.source),
+        chatSession.getEventDate
+      )
+    ).flatMap { msg =>
+
+      val timepicker = createTimepicker()
+
+      bot.request(
+        SendMessage(
+          ChatId(msg.source),
+          "Please choose the time for the event",
+          replyMarkup = Some(timepicker)
+        )
+      )
+
+    }.map { msg =>
+      chatSession.inputTimepickerMessageId = Some(msg.messageId)
+      chatSession.save()
+      msg
+    }
+
+  }
+
 
   def createTimepicker(): InlineKeyboardMarkup = {
 
@@ -250,30 +293,56 @@ object KeepInMind2 extends LazyLogging {
       chatSession.inputEventMinutes = Some(minutes)
       chatSession.save()
 
+      implicit val message: Message = msg
+      proceedToDurationpicker(bot, chatSession)
+
+    }
+  }
+
+  def onMessageEventTime(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
+
+    // TODO: here should be preprocessing logic from /keepinmind
+    val text = msg.text.get.split(':')
+    chatSession.inputEventHour = Some(text(0).toInt)
+    chatSession.inputEventMinutes = Some(text(1).toInt)
+    chatSession.save()
+
+    proceedToDurationpicker(bot, chatSession)
+
+  }
+
+  def proceedToDurationpicker(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
+
+    if (chatSession.chatState != ChatState.CreatingEventInputtingTime) {
+      return
+    }
+
+    chatSession.chatState = ChatState.CreatingEventInputtingDuration
+    chatSession.save()
+
+    bot.request(
+      SendMessage(
+        ChatId(msg.source),
+        chatSession.getEventTime
+      )
+    ).flatMap { msg =>
+
+      val durationpicker = createDurationpicker()
+
       bot.request(
         SendMessage(
           ChatId(msg.source),
-          chatSession.getEventTime
+          "Please choose the time for the event",
+          replyMarkup = Some(durationpicker)
         )
-      ).flatMap { msg =>
+      )
 
-        val durationpicker = createDurationpicker()
-
-        bot.request(
-          SendMessage(
-            ChatId(msg.source),
-            "Please choose the time for the event",
-            replyMarkup = Some(durationpicker)
-          )
-        )
-
-      }.map { msg =>
-        chatSession.inputDurationpickerMessageId = Some(msg.messageId)
-        chatSession.save()
-        msg
-      }
-
+    }.map { msg =>
+      chatSession.inputDurationpickerMessageId = Some(msg.messageId)
+      chatSession.save()
+      msg
     }
+
   }
 
   val DURATIONS = List(
@@ -285,8 +354,7 @@ object KeepInMind2 extends LazyLogging {
     60 -> "1 hour",
     90 -> "1.5 hours",
     120 -> "2.0 hours",
-    180 -> "3.0 hours",
-    666 -> "are you sadist?"
+    180 -> "3.0 hours"
   )
 
   def createDurationpicker(): InlineKeyboardMarkup = {
@@ -303,8 +371,7 @@ object KeepInMind2 extends LazyLogging {
     InlineKeyboardMarkup(durationpickerButtons)
   }
 
-  // scalastyle:off method.length
-  def onCallbackWithTagDuration(bot: SierraBot)(implicit cbq: CallbackQuery): Unit = {
+  def onCallbackWithTagDuration(bot: SierraBot)(implicit cbq: CallbackQuery, ec: ExecutionContext): Unit = {
     // Notification only shown to the user who pressed the button.
     bot.ackCallback()
 
@@ -329,80 +396,98 @@ object KeepInMind2 extends LazyLogging {
       chatSession.inputEventDurationInMinutes = Some(durationInMinutes)
       chatSession.save()
 
-      val calendar = Calendar.getInstance
-      calendar.set(
-        chatSession.inputEventYear.get,
-        chatSession.inputEventMonth.get,
-        chatSession.inputEventDay.get,
-        chatSession.inputEventHour.get,
-        chatSession.inputEventMinutes.get
-      )
-      val beginDate: Date = calendar.getTime
-
-      val ONE_MINUTE_IN_MILLIS = 60000
-      val duration = durationInMinutes * ONE_MINUTE_IN_MILLIS
-      val endDate = new Date(beginDate.getTime + duration)
-
-      val intersectedEvents = ChatSession.hasIntersections(
-        msg.chat.id, beginDate, endDate)
-      logger.debug(intersectedEvents.toString)
-
-      val answer = if (intersectedEvents.isEmpty) {
-        val event = Event.create(msg.chat.id, beginDate, chatSession.inputEventName.get, endDate)
-
-        for {
-          inputCalendarMessageId <- chatSession.inputCalendarMessageId
-        } /* do */ {
-          bot.request(
-            DeleteMessage(
-              ChatId(msg.source), // msg.chat.id
-              inputCalendarMessageId
-            )
-          )
-        }
-
-        for {
-          inputTimepickerMessageId <- chatSession.inputTimepickerMessageId
-        } /* do */ {
-          bot.request(
-            DeleteMessage(
-              ChatId(msg.source), // msg.chat.id
-              inputTimepickerMessageId
-            )
-          )
-        }
-
-        for {
-          inputDurationpickerMessageId <- chatSession.inputDurationpickerMessageId
-        } /* do */ {
-          bot.request(
-            DeleteMessage(
-              ChatId(msg.source), // msg.chat.id
-              inputDurationpickerMessageId
-            )
-          )
-        }
-
-        chatSession.chatState = ChatState.Started
-        chatSession.resetInputs()
-        chatSession.save()
-
-        "The event " + event + " is recorded. I will remind you ;)"
-      } else {
-        val stringBuilder = new StringBuilder(
-          "I'm sorry but this event intersects with another ones:\n ")
-        intersectedEvents.foreach(stringBuilder.append(_).append("\n"))
-        stringBuilder.toString()
-      }
-
-      bot.request(
-        SendMessage(
-          ChatId(msg.source),
-          answer
-        )
-      )
+      implicit val message: Message = msg
+      createEvent(bot, chatSession)
 
     }
+  }
+
+  def onMessageEventDuration(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
+
+    // TODO: here should be preprocessing logic from /keepinmind
+    chatSession.inputEventDurationInMinutes = Some(msg.text.get.toInt)
+    chatSession.save()
+
+    createEvent(bot, chatSession)
+
+  }
+
+  // scalastyle:off method.length
+  def createEvent(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
+
+    val calendar = Calendar.getInstance
+    calendar.set(
+      chatSession.inputEventYear.get,
+      chatSession.inputEventMonth.get,
+      chatSession.inputEventDay.get,
+      chatSession.inputEventHour.get,
+      chatSession.inputEventMinutes.get
+    )
+    val beginDate: Date = calendar.getTime
+
+    val ONE_MINUTE_IN_MILLIS = 60000
+    val duration = chatSession.inputEventDurationInMinutes.get * ONE_MINUTE_IN_MILLIS
+    val endDate = new Date(beginDate.getTime + duration)
+
+    val intersectedEvents = ChatSession.hasIntersections(
+      msg.chat.id, beginDate, endDate)
+    logger.debug(intersectedEvents.toString)
+
+    val answer = if (intersectedEvents.isEmpty) {
+      val event = Event.create(msg.chat.id, beginDate, chatSession.inputEventName.get, endDate)
+
+      for {
+        inputCalendarMessageId <- chatSession.inputCalendarMessageId
+      } /* do */ {
+        bot.request(
+          DeleteMessage(
+            ChatId(msg.source), // msg.chat.id
+            inputCalendarMessageId
+          )
+        )
+      }
+
+      for {
+        inputTimepickerMessageId <- chatSession.inputTimepickerMessageId
+      } /* do */ {
+        bot.request(
+          DeleteMessage(
+            ChatId(msg.source), // msg.chat.id
+            inputTimepickerMessageId
+          )
+        )
+      }
+
+      for {
+        inputDurationpickerMessageId <- chatSession.inputDurationpickerMessageId
+      } /* do */ {
+        bot.request(
+          DeleteMessage(
+            ChatId(msg.source), // msg.chat.id
+            inputDurationpickerMessageId
+          )
+        )
+      }
+
+      chatSession.chatState = ChatState.Started
+      chatSession.resetInputs()
+      chatSession.save()
+
+      "The event " + event + " is recorded. I will remind you ;)"
+    } else {
+      val stringBuilder = new StringBuilder(
+        "I'm sorry but this event intersects with another ones:\n ")
+      intersectedEvents.foreach(stringBuilder.append(_).append("\n"))
+      stringBuilder.toString()
+    }
+
+    bot.request(
+      SendMessage(
+        ChatId(msg.source),
+        answer
+      )
+    )
+
   }
   // scalastyle:on method.length
 
