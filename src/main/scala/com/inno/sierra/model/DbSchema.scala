@@ -139,7 +139,7 @@ object DbSchema extends Schema with LazyLogging {
       //case cse: ChatSessionEvents => transaction(csEvents.update(cse))
       //case gm: GroupMembers => transaction(groupMembers.update(gm))
       case _ => new IllegalArgumentException(
-        "the type " + entity.getClass + "is not known")
+        "the type " + entity.getClass + "is unknown")
     }
   }
 
@@ -154,8 +154,29 @@ object DbSchema extends Schema with LazyLogging {
       transaction(chatSessions.deleteWhere(_.id === id))
     case t if t =:= typeOf[Event] =>
       transaction(events.deleteWhere(_.id === id))
+    case _ => new IllegalArgumentException(
+      "the type " + typeOf[T] + "is unknown")
   }
 
+  def delete(gm: GroupMembers): Unit = {
+      transaction(groupMembers.deleteWhere(g =>
+        g.groupId === gm.groupId and g.memberId === gm.memberId))
+  }
+
+  def getMembers(csid: Long): List[ChatSession] = {
+    val group = getChatSessionByChatId(csid).getOrElse(
+      return List[ChatSession]()
+    )
+    val result = ListBuffer[ChatSession]()
+    transaction {
+      from(groupMembers, chatSessions)((gm, cs) =>
+        where(
+          gm.memberId === cs.id and gm.groupId === group.id
+        ).select(cs))
+        .foreach(cs => result += cs)
+      result.toList
+    }
+  }
 
   def getAllEventsTillDate(date: Date, isNotified: Boolean = false): List[Event] = {
     val stamp = new Timestamp(date.getTime)
@@ -207,7 +228,6 @@ object DbSchema extends Schema with LazyLogging {
               )
         ).select(e))
         .foreach(e => result += e)
-      logger.debug(result.toString)
       result
     }
   }

@@ -24,22 +24,22 @@ import scala.util.{Failure, Success}
 abstract class SierraBot extends TelegramBot with Commands with Callbacks {
 //  lazy val botName = ConfigFactory.load().getString("bot.name")
   val botName: String =
-    Await.result(request(GetMe).map(_.firstName), 10.seconds)
+    "@sierraTest1bot"
   lazy val token: String = ConfigFactory.load().getString("bot.token")
 
   val NUM_OF_THREADS = 10
   var notifier: Cancellable = _
 
   onCommand("/start") {
-    println("start command")
-    implicit msg => {
-      println("msg is: " + msg)
-      reply(Start.execute(msg))
-    }
+    implicit msg => reply(Start.execute(msg))
   }
 
   onCommand("/subscribe") {
     implicit msg => reply(Subscribe.execute(msg))
+  }
+
+  onCommand("/unsubscribe") {
+    implicit msg => reply(Unsubscribe.execute(msg))
   }
 
   onCommand("/keepinmind") {
@@ -53,12 +53,12 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
   onCommand("/myevents") {
     implicit msg => reply(MyEvents.execute(msg))
   }
-  
+
   /**
     * Handling the communication within the group is implemented here.
     * @param message message instance
     */
-  override def receiveMessage(message: Message): Unit = {
+  /*override def receiveMessage(message: Message): Unit = {
     logger.debug("recieved message '" + message.text + "' from " + message.chat)
     for (text <- message.text) {
       // If it is a group chat
@@ -81,7 +81,7 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
       }
 
     }
-  }
+  }*/
 
 
   val actorSystem = ActorSystem("telegramNotification")

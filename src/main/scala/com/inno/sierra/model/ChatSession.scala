@@ -50,6 +50,9 @@ case class ChatSession (
 
   def save() = DbSchema.update(this)
 
+  def getMembers(): List[ChatSession] = {
+    DbSchema.getMembers(csid)
+  }
 }
 
 
@@ -73,6 +76,10 @@ object ChatSession {
 
   def getByChatId(csid: Long) = {
     DbSchema.getChatSessionByChatId(csid)
+  }
+
+  def getMembersOfGroup(csid: Long): List[ChatSession] = {
+    DbSchema.getMembers(csid)
   }
 
   def update(cs: ChatSession) = {
@@ -103,5 +110,20 @@ object ChatSession {
 
     val gm = GroupMembers(group.id, member.id)
     DbSchema.insert[GroupMembers](gm)
+  }
+
+  def removeUserFromGroup(groupChatId: Long,
+                          memberChatId: Long): Unit = {
+    val group = DbSchema.getChatSessionByChatId(groupChatId)
+      .getOrElse(
+        ChatSession.create(groupChatId, "", isGroup = true, DEFAULT_STATE)
+      )
+    val member = DbSchema.getChatSessionByChatId(memberChatId)
+      .getOrElse(
+        return
+      )
+
+    val gm = GroupMembers(group.id, member.id)
+    DbSchema.delete(gm)
   }
 }
