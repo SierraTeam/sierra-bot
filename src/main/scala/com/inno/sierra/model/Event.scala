@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import org.squeryl.KeyedEntity
 import java.util.Date
 
-import scala.collection.mutable
+import com.inno.sierra.bot.Utils
 
 case class Event private (
             var id: Long,
@@ -14,9 +14,8 @@ case class Event private (
             var endDate: Timestamp,
             var isNotified: Boolean = false) extends KeyedEntity[Long] {
 
-  // TODO: make a better format
   override def toString: String = {
-    beginDate + " - " + endDate + ": " + name
+    beginDate.toLocalDateTime.format(Utils.datePattern) + " - " + endDate.toLocalDateTime.format(Utils.datePattern) + ": " + name
   }
 }
 
