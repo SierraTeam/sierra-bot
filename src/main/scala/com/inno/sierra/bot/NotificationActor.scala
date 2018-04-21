@@ -5,7 +5,6 @@ import com.inno.sierra.model.{ChatSession, DbSchema, Event}
 import com.typesafe.scalalogging.LazyLogging
 
 class NotificationActor(bot: SierraBot) extends Actor with LazyLogging {
-  /*lazy val token = ConfigFactory.load().getString("bot.token")*/
 
   private def sendNotification(event: Event): Unit = {
     val chatSession = DbSchema.getChatSessionByEventId(event.id)
@@ -13,7 +12,7 @@ class NotificationActor(bot: SierraBot) extends Actor with LazyLogging {
     logger.debug("Notifying about " + event.name + ", chatsessionid: " + chatSession.csid)
 
     val baseNotification = MessagesText.NOTIFICATION
-      .format(event.name, event.beginDate)
+      .format(event.name, event.beginDate.toLocalDateTime.format(Utils.datePattern))
 
     val notification =
       if (!chatSession.isGroup) {
