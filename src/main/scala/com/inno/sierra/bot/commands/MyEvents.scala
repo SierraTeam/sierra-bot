@@ -13,7 +13,8 @@ object MyEvents extends LazyLogging {
       MessagesText.NO_EVENTS_FOUND
     } else {
       events.map(e => {
-        e.id + ": " + e.beginDate.toLocalDateTime.format(Utils.datePattern) + " — " + e.endDate.toLocalDateTime.format(Utils.timePattern) + " " + e.name
+        e.id + ": " + e.beginDate.toLocalDateTime.format(Utils.datePattern) +
+          " — " + e.endDate.toLocalDateTime.format(Utils.timePattern) + " " + e.name
       }).reduce(_ + "\n" + _)
     }
   }

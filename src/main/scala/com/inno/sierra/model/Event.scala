@@ -15,7 +15,8 @@ case class Event private (
             var isNotified: Boolean = false) extends KeyedEntity[Long] {
 
   override def toString: String = {
-    beginDate.toLocalDateTime.format(Utils.datePattern) + " - " + endDate.toLocalDateTime.format(Utils.datePattern) + ": " + name
+    beginDate.toLocalDateTime.format(Utils.datePattern) + " - " +
+      endDate.toLocalDateTime.format(Utils.datePattern) + ": " + name
   }
 }
 
