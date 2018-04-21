@@ -65,4 +65,7 @@ object MessagesText {
 
   val NO_EVENTS_FOUND: String =
     "There is no upcoming events recorded for you."
+
+  val EVENT_ALREADY_PASS: String =
+    "The event must be in the future, to be schedule."
 }
