@@ -42,7 +42,13 @@ object MessagesText {
     "The event %s is recorded. I will remind you ;)"
 
   val KEEPINMIND_INTERSECTIONS: String =
-    "I'm sorry but this event intersects with another ones:\n "
+    "I'm sorry but this event intersects with other ones:\n "
+
+  val KEEPINMIND_INTERSECTIONS_PRIVATE_GROUP: String =
+    "I'm sorry but the event planned in the group %s intersects with your other ones:\n "
+
+  val KEEPINMIND_INTERSECTIONS_GROUP: String =
+    "I'm sorry but this event intersects with other ones for the following users: "
 
   val KEEPINMIND_NOT_ENOUGH_PARAMS: String =
     "Create an event requires 4 parameters date, hour, name and duration(min). " +

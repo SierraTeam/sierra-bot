@@ -10,13 +10,22 @@ object Start extends LazyLogging {
     val user = msg.from.get
     val chat = msg.chat
 
-    if (!ChatSession.exists(chat.id)) {
-      ChatSession.create(chat.id, user.username.get,
-        !chat.`type`.equals(ChatType.Private), ChatState.Started)
-      MessagesText.START_FIRST_TIME.format(user.firstName)
+    if (chat.`type`.equals(ChatType.Private)) {
+      createIfNotExist(chat.id, user.username.getOrElse(""), false, user.firstName)
+    } else {
+      createIfNotExist(chat.id, "", true, "")
+      createIfNotExist(user.id, user.username.getOrElse(""), false, user.firstName)
+    }
+  }
+
+  private def createIfNotExist(csid: Long, alias: String,
+                       isGroup: Boolean, firstName: String) = {
+    if (!ChatSession.exists(csid)) {
+      ChatSession.create(csid, alias, isGroup, ChatState.Started)
+      MessagesText.START_FIRST_TIME.format(firstName)
 
     } else {
-      MessagesText.START_AGAIN.format(user.firstName)
+      MessagesText.START_AGAIN.format(firstName)
     }
   }
 }

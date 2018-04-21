@@ -4,7 +4,7 @@
 
 This bot is a simple assistant that provides the following functionality:
 * /start: Starts this bot.
-* /keepinmind: Creates an Event to Keep in Mind.  
+* /keepinmind: Creates an Event to Keep in Mind (bot's mind).  
 Example: 24.04.2018 10:23 EventName 60.  
 Parameters are date, time, name of the event and its duration in minutes.
 * /myevents:  Displays list of all events scheduled for you.

@@ -37,7 +37,7 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
       val args = Extractors.commandArguments(msg)
       if (args.isEmpty || args.get.length != 4) {
         KeepInMind2.execute(this)
-      } else reply(KeepInMind.execute(msg))
+      } else reply(KeepInMind.execute(this))
     }
   }
 
@@ -80,37 +80,6 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
   onCallbackWithTag("event-") { implicit cbq =>
     CancelEvent.onCallbackWithTagEvent(this)
   }
-
-  /**
-    * Handling the communication within the group is implemented here.
-    *
-    * @param message message instance
-    */
-  /*override def receiveMessage(message: Message): Unit = {
-    logger.debug("recieved message '" + message.text + "' from " + message.chat)
-    for (text <- message.text) {
-      // If it is a group chat
-      if (message.chat.`type` == ChatType.Group) {
-        if (text.startsWith(botName)) {
-          if (text.contains("/info")) {
-            request(SendMessage(message.source, Info.execute(message)))
-          } else if (text.contains("/start")) {
-            request(SendMessage(message.source, Start.execute(message)))
-          } else if (text.contains("/keepinmind")) {
-            request(SendMessage(message.source, KeepInMind.execute(message)))
-          } else {
-            request(SendMessage(message.source, "I'm sorry, it seems I can't understand you -_- " +
-              "Let me explain what I can do"))
-            request(SendMessage(message.source, Info.execute(message)))
-          }
-        }
-      } else {
-        super.receiveMessage(message)
-      }
-
-    }
-  }*/
-
 
   val actorSystem = ActorSystem("telegramNotification")
 
