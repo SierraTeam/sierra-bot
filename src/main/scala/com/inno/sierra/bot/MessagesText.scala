@@ -4,11 +4,11 @@ object MessagesText {
 
   val INFO: String =
     """Telegram bot created with Scala.
-      |This bot is a simple Assistant that provides the following functionality:\n
-      |/start: Starts this bot.\n
-      |/keepinmind: Creates an Event to Keep in Mind.\n
-      |/info:  Displays description (this text).\n
-      |/exit:  TODO.\n
+      |This bot is a simple Assistant that provides the following functionality:
+      |/start: Starts this bot.
+      |/keepinmind: Creates an Event to Keep in Mind.
+      |/info:  Displays description (this text).
+      |/exit:  TODO.
       """.stripMargin
 
   val START_FIRST_TIME: String =
