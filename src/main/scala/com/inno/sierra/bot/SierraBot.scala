@@ -134,7 +134,7 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     super.shutdown()
   }
 
-  def sendMessage(csid: Long, text: String): Unit = synchronized {
+  def sendMessage(csid: Long, text: String): Unit = {
     request(SendMessage(csid, text)) onComplete {
       case Success(_) =>
       case Failure(e) => logger.error("Message sending error: ", e)

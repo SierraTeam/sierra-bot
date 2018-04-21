@@ -7,6 +7,10 @@ object MessagesText {
       |This bot is a simple Assistant that provides the following functionality:
       |/start: Starts this bot.
       |/keepinmind: Creates an Event to Keep in Mind.
+      |/Example: 24.04.2018 10:23 EventName 60.
+      |/Parameters are date, time, name of the event and its duration in minutes.
+      |/myevents:  Displays list of all events scheduled for you.
+      |/cancelevent:  Cancels the event. Id of event can be passed as a parameter.
       |/info:  Displays description (this text).
       |/exit:  TODO.
       """.stripMargin

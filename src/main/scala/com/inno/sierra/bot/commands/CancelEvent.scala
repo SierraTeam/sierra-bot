@@ -12,9 +12,13 @@ object CancelEvent {
 
     if (args.isEmpty) {
       val events = DbSchema.getAll[Event](None)
-      val buttons = events.map(e =>
-        InlineKeyboardButton.callbackData(e.name, "event-" + e.id))
-      bot.reply("Choose the event to cancel", replyMarkup = Some(InlineKeyboardMarkup(Seq(buttons))))
+      if (events.nonEmpty) {
+        val buttons = events.map(e =>
+          InlineKeyboardButton.callbackData(e.name, "event-" + e.id))
+        bot.reply("Choose the event to cancel", replyMarkup = Some(InlineKeyboardMarkup(Seq(buttons))))
+      } else {
+        bot.reply("You have no scheduled events")
+      }
     } else {
       removeEvent(args.head.toInt, bot)
     }
@@ -25,7 +29,7 @@ object CancelEvent {
     removeEvent(cbq.data.get.toInt, bot)(cbq.message.get)
   }
 
-  private def removeEvent(id: Int, bot: SierraBot)(implicit msg:Message): Unit = {
+  private def removeEvent(id: Int, bot: SierraBot)(implicit msg: Message): Unit = {
     if (DbSchema.getEntityById[Event](id).nonEmpty) {
       DbSchema.delete[ChatSessionEvents](id)
       DbSchema.delete[Event](id)
