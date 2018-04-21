@@ -1,15 +1,10 @@
 package com.inno.sierra.bot.commands
 
-import java.text.SimpleDateFormat
-import java.util.{Calendar, Date}
-
-import com.inno.sierra.bot.MessagesText
+import java.util.Calendar
+import com.inno.sierra.bot.{MessagesText, Utils}
 import com.inno.sierra.model.{ChatSession, Event}
 import info.mukel.telegrambot4s.api.Extractors
 import info.mukel.telegrambot4s.models.Message
-
-import scala.collection.mutable
-import scala.collection.mutable.MutableList
 import com.typesafe.scalalogging.LazyLogging
 import java.util.Date
 
@@ -44,13 +39,13 @@ object KeepInMind extends LazyLogging {
     )
 
     var i = 0
-    var indexError = 0;
-    var noError = 0;
+    var indexError = 0
+    var noError = 0
     var listRegex = List(DateOnly,TimeOnly,NameMeeting,TimeDuration)
     for (arg <- args) {
       logger.trace(arg)
       if (!arg.isEmpty && !arg.startsWith("/")) {
-        logger.trace(listRegex(i).toString());
+        logger.trace(listRegex(i).toString())
         indexError = i+1
         verifyParameter(arg, listRegex(i),indexError)
         i += 1
@@ -74,32 +69,31 @@ object KeepInMind extends LazyLogging {
 
 
       Start.execute(msg)
-      val beginDate = getDate(args(0).concat(" ").concat(args(1)))
+      val dateToday = Utils.simpleDateTimeFormat
+        .parse(Utils.simpleDateTimeFormat.format(Calendar.getInstance().getTime))
+      val beginDate = Utils.simpleDateTimeFormat
+        .parse(args.head.concat(" ").concat(args(1)))
+
       if (dateToday.before(beginDate)){
-      val duration = Integer.parseInt(args(3)) * ONE_MINUTE_IN_MILLIS
-      val endDate = new Date(beginDate.getTime() + duration)
+        val duration = Integer.parseInt(args(3)) * ONE_MINUTE_IN_MILLIS
+        val endDate = new Date(beginDate.getTime + duration)
 
-          val intersectedEvents = ChatSession.hasIntersections(
-            msg.chat.id, beginDate, endDate)
-          logger.debug(intersectedEvents.toString)
+        val intersectedEvents = ChatSession.hasIntersections(
+          msg.chat.id, beginDate, endDate)
+        logger.debug(intersectedEvents.toString)
 
-          if (intersectedEvents.isEmpty) {
-            val event = Event.create(msg.chat.id, beginDate, args(2), endDate)
-            MessagesText.KEEPINMIND_DONE.format(event)
-          } else {
-            val stringBuilder = new StringBuilder(
-              MessagesText.KEEPINMIND_INTERSECTIONS)
-            intersectedEvents.foreach(stringBuilder.append(_).append("\n"))
-            stringBuilder.toString()
-          }
+        if (intersectedEvents.isEmpty) {
+          val event = Event.create(msg.chat.id, beginDate, args(2), endDate)
+          MessagesText.KEEPINMIND_DONE.format(event)
+        } else {
+          val stringBuilder = new StringBuilder(
+            MessagesText.KEEPINMIND_INTERSECTIONS)
+          intersectedEvents.foreach(stringBuilder.append(_).append("\n"))
+          stringBuilder.toString()
+        }
       }else {
         MessagesText.EVENT_ALREADY_PASS
       }
     }
-  }
-
-  private def getDate(datetime: String) = {
-    val simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm")
-    simpleDateFormat.parse(datetime)
   }
 }
