@@ -79,6 +79,8 @@ object DbSchema extends Schema with LazyLogging {
     val result = typeOf[T] match {
       case t if t =:= typeOf[ChatSession] =>
         transaction(from(chatSessions)(s => where(s.id === id).select(s)).headOption)
+      case t if t =:= typeOf[Event] =>
+        transaction(from(events)(s => where(s.id === id).select(s)).headOption)
     }
     result.asInstanceOf[Option[T]]
   }
@@ -120,8 +122,8 @@ object DbSchema extends Schema with LazyLogging {
       case e: Event => transaction(events.insert(e))
       case cse: ChatSessionEvents => transaction(csEvents.insert(cse))
       case gm: GroupMembers => transaction(groupMembers.insert(gm))
-      case _ => new IllegalArgumentException(
-        "the type " + entity.getClass + "is not known")
+      case _ => throw new IllegalArgumentException(
+        "the type " + entity.getClass + " is not known")
     }
     result.asInstanceOf[T]
   }
@@ -138,15 +140,15 @@ object DbSchema extends Schema with LazyLogging {
       case e: Event => transaction(events.update(e))
       //case cse: ChatSessionEvents => transaction(csEvents.update(cse))
       //case gm: GroupMembers => transaction(groupMembers.update(gm))
-      case _ => new IllegalArgumentException(
-        "the type " + entity.getClass + "is unknown")
+      case _ => throw new IllegalArgumentException(
+        "the type " + entity.getClass + " is unknown")
     }
   }
 
   /**
     * Deletes the entity by its id.
     *
-    * @param id id of the entity
+    * @param id id of the entity. In case of ChatSessionEvents use eventId
     * @tparam T type of the entity
     */
   def delete[T: TypeTag](id: Long): Unit = typeOf[T] match {
@@ -154,8 +156,10 @@ object DbSchema extends Schema with LazyLogging {
       transaction(chatSessions.deleteWhere(_.id === id))
     case t if t =:= typeOf[Event] =>
       transaction(events.deleteWhere(_.id === id))
-    case _ => new IllegalArgumentException(
-      "the type " + typeOf[T] + "is unknown")
+    case t if t =:= typeOf[ChatSessionEvents] =>
+      transaction(csEvents.deleteWhere(_.eventId === id)) //BY EVENT ID
+    case _ => throw new IllegalArgumentException(
+      "the type " + typeOf[T] + " is unknown")
   }
 
   def delete(gm: GroupMembers): Unit = {

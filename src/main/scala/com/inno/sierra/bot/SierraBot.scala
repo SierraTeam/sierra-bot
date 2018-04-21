@@ -1,23 +1,16 @@
 package com.inno.sierra.bot
 
-import java.sql.Timestamp
-import java.text.SimpleDateFormat
-import java.util.{Calendar, Date, GregorianCalendar, TimeZone}
-
-import com.inno.sierra.model.{ChatSession, ChatState, Event}
-import com.inno.sierra.bot.commands._
-import info.mukel.telegrambot4s.api._
-import info.mukel.telegrambot4s.api.declarative.{Callbacks, Commands}
-import info.mukel.telegrambot4s.methods.{DeleteMessage, EditMessageReplyMarkup, GetMe, SendMessage}
-import info.mukel.telegrambot4s.models._
 import java.util.concurrent.Executors
 
 import akka.actor.{ActorSystem, Cancellable, Props}
+import com.inno.sierra.bot.commands._
+import com.typesafe.config.ConfigFactory
+import info.mukel.telegrambot4s.api._
+import info.mukel.telegrambot4s.api.declarative.{Callbacks, Commands}
+import info.mukel.telegrambot4s.methods.SendMessage
 
 import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
-import scala.collection.mutable.MutableList
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 
@@ -56,6 +49,10 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     implicit msg => reply(MyEvents.execute(msg))
   }
 
+  onCommand("/cancelevent") {
+    implicit msg => CancelEvent.execute(this)
+  }
+
   onMessage { implicit msg =>
     KeepInMind2.onMessage(this)
   }
@@ -80,8 +77,13 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     KeepInMind2.onCallbackWithTagDuration(this)
   }
 
+  onCallbackWithTag("event-") { implicit cbq =>
+    CancelEvent.onCallbackWithTagEvent(this)
+  }
+
   /**
     * Handling the communication within the group is implemented here.
+    *
     * @param message message instance
     */
   /*override def receiveMessage(message: Message): Unit = {
@@ -118,8 +120,8 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
       ExecutionContext.fromExecutor(Executors.newCachedThreadPool()))
     val notificationSendingActor =
       actorSystem.actorOf(Props(classOf[NotificationActor], this), "notificationSendingActor")
-    val timeframe = (10 seconds)  //each x seconds bot will lookup for new events and send them
-    notifier = actorSystem.scheduler.schedule(0 seconds, timeframe){
+    val timeframe = (10 seconds) //each x seconds bot will lookup for new events and send them
+    notifier = actorSystem.scheduler.schedule(0 seconds, timeframe) {
       ns.sendMessages(notificationSendingActor, timeframe) onComplete {
         case Success(_) =>
         case Failure(e) => logger.error("Notifier error: ", e)

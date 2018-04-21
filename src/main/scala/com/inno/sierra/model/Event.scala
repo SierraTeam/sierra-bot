@@ -32,6 +32,10 @@ object Event {
     DbSchema.update(event)
   }
 
+  def cancel(event: Event): Unit = {
+    DbSchema.delete(event.id)
+  }
+
   def assignEventTo(eventId: Long, chatId: Long): Unit = {
     val chatSession = DbSchema.getChatSessionByChatId(chatId).get
     val cse = ChatSessionEvents(eventId, chatSession.id)

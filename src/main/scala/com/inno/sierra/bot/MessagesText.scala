@@ -73,6 +73,9 @@ object MessagesText {
   val KEEPINMIND2_EVENT_DURATION: String =
     ""
 
+  val CANCEL_MISSING_PARAM: String =
+    "Please specify number of event you want to cancel"
+
   val NOTIFICATION: String =
     "I want to remind you that you have an event '%s' at %s"
 
@@ -84,4 +87,10 @@ object MessagesText {
 
   val EVENT_ALREADY_PASS: String =
     "The event must be in the future, to be schedule."
+
+  val CANCEL_DONE: String =
+    "Event was canceled"
+
+  val CANCEL_FAILED: String =
+    "Error: Unable to chancel this event"
 }
