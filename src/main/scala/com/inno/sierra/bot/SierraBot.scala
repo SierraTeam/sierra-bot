@@ -52,7 +52,7 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     implicit msg => reply(Info.execute(msg))
   }
 
-  onCommand("/SyncMeWithGoogle") {
+  onCommand("/SyncMeWithGoogle", "sync") {
 
 
     implicit msg =>reply(SyncGoogle.checkFree().toString)
