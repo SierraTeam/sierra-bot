@@ -12,6 +12,17 @@ import info.mukel.telegrambot4s.models._
 import scala.concurrent.ExecutionContext
 
 object KeepInMind2 extends LazyLogging {
+  val DURATIONS = List(
+    5 -> "5 min",
+    10 -> "10 min",
+    15 -> "15 min",
+    30 -> "30 min",
+    45 -> "45 min",
+    60 -> "1 hour",
+    90 -> "1.5 hours",
+    120 -> "2.0 hours",
+    180 -> "3.0 hours"
+  )
 
   def execute(bot: SierraBot)(implicit msg: Message): Unit = {
     Start.execute(msg)
@@ -21,16 +32,15 @@ object KeepInMind2 extends LazyLogging {
     chatSession.resetInputs()
     chatSession.save()
 
-    bot.reply("Alright, a new event. How are we going to call it? Please choose a name for an event.")
+    bot.reply(MessagesText.KEEPINMIND2_EVENT_NAME)
   }
 
   def onMessage(bot: SierraBot)(implicit msg: Message, ec: ExecutionContext): Unit = {
-
     for {
       chatSession <- ChatSession.getByChatId(msg.chat.id)
       _ <- msg.text
       command <- Extractors.textTokens(msg).map(_.head)
-      if command != "/keepinmind2"
+      if !command.toString.equals("/keepinmind")
     } /* do */ {
       chatSession.chatState match {
         case ChatState.CreatingEventInputtingName =>
@@ -41,14 +51,14 @@ object KeepInMind2 extends LazyLogging {
           onMessageEventTime(bot, chatSession)
         case ChatState.CreatingEventInputtingDuration =>
           onMessageEventDuration(bot, chatSession)
+        case _ => logger.debug("not applicable to keepinmind2"); return// do nothing
       }
     }
-
   }
 
-  def onMessageEventName(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
+  def onMessageEventName(bot: SierraBot, chatSession: ChatSession)
+                        (implicit msg: Message, ec: ExecutionContext): Unit = {
     chatSession.inputEventName = msg.text
-
     val now = new GregorianCalendar
     val year = now.get(Calendar.YEAR)
     val month = now.get(Calendar.MONTH) + 1
@@ -63,7 +73,7 @@ object KeepInMind2 extends LazyLogging {
     val calendar = createCalendar(year, month)
 
     bot.reply(
-      "Good. Now let's choose a date for your event. Use the calendar widget to enter the planned date.",
+      MessagesText.KEEPINMIND2_EVENT_DATE,
       replyMarkup = Some(calendar)
     ).map { msg =>
       chatSession.inputCalendarMessageId = Some(msg.messageId)
@@ -97,7 +107,8 @@ object KeepInMind2 extends LazyLogging {
     val daySlotsInMonth: Seq[String] = Seq().padTo(calendar.dayOfWeek, "  ") ++
       calendar.daysInMonth.map(_.toString)
     val daySlotsInMonthPadded: Seq[String] = daySlotsInMonth match {
-      case _ if daySlotsInMonth.lengthCompare(daysInCalendarMax - 7) > 0 =>  daySlotsInMonth.padTo(daysInCalendarMax, " ")
+      case _ if daySlotsInMonth.lengthCompare(daysInCalendarMax - 7) > 0 =>
+        daySlotsInMonth.padTo(daysInCalendarMax, " ")
       case _ => daySlotsInMonth.padTo(daysInCalendarMax - 7, " ")
     }
 
@@ -133,11 +144,13 @@ object KeepInMind2 extends LazyLogging {
   }
   // scalastyle:on method.length
 
-  def onCallbackWithTagIgnore(bot: SierraBot)(implicit cbq: CallbackQuery): Unit = {
+  def onCallbackWithTagIgnore(bot: SierraBot)
+                             (implicit cbq: CallbackQuery): Unit = {
     bot.ackCallback()
   }
 
-  def onCallbackWithTagMonth(bot: SierraBot)(implicit cbq: CallbackQuery): Unit = {
+  def onCallbackWithTagMonth(bot: SierraBot)
+                            (implicit cbq: CallbackQuery): Unit = {
     // Notification only shown to the user who pressed the button.
     bot.ackCallback()
 
@@ -178,7 +191,9 @@ object KeepInMind2 extends LazyLogging {
   }
 
   // scalastyle:off method.length
-  def onCallbackWithTagCalendarDay(bot: SierraBot)(implicit cbq: CallbackQuery, ec: ExecutionContext): Unit = {
+  def onCallbackWithTagCalendarDay
+    (bot: SierraBot)
+    (implicit cbq: CallbackQuery, ec: ExecutionContext): Unit = {
     // Notification only shown to the user who pressed the button.
     bot.ackCallback()
 
@@ -211,8 +226,8 @@ object KeepInMind2 extends LazyLogging {
   }
   // scalastyle:on method.length
 
-  def onMessageEventDate(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
-
+  def onMessageEventDate(bot: SierraBot, chatSession: ChatSession)
+                        (implicit msg: Message, ec: ExecutionContext): Unit = {
     // TODO: here should be preprocessing logic from /keepinmind
     val text = msg.text.get.split('.')
     chatSession.inputEventDay = Some(text(0).toInt)
@@ -221,11 +236,10 @@ object KeepInMind2 extends LazyLogging {
     chatSession.save()
 
     proceedToTimepicker(bot, chatSession)
-
   }
 
-  def proceedToTimepicker(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
-
+  def proceedToTimepicker(bot: SierraBot, chatSession: ChatSession)
+                         (implicit msg: Message, ec: ExecutionContext): Unit = {
     if (chatSession.chatState != ChatState.CreatingEventInputtingDate) {
       return
     }
@@ -260,7 +274,6 @@ object KeepInMind2 extends LazyLogging {
 
 
   def createTimepicker(): InlineKeyboardMarkup = {
-
     // scalastyle:off magic.number
     val timepickerButtons = (0 to 23 flatMap { hh: Int =>
       List(0, 30) map { mm: Int =>
@@ -275,7 +288,8 @@ object KeepInMind2 extends LazyLogging {
     InlineKeyboardMarkup(timepickerButtons)
   }
 
-  def onCallbackWithTagTimepicker(bot: SierraBot)(implicit cbq: CallbackQuery, ec: ExecutionContext): Unit = {
+  def onCallbackWithTagTimepicker(bot: SierraBot)
+                                 (implicit cbq: CallbackQuery, ec: ExecutionContext): Unit = {
     // Notification only shown to the user who pressed the button.
     bot.ackCallback()
 
@@ -299,8 +313,8 @@ object KeepInMind2 extends LazyLogging {
     }
   }
 
-  def onMessageEventTime(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
-
+  def onMessageEventTime(bot: SierraBot, chatSession: ChatSession)
+                        (implicit msg: Message, ec: ExecutionContext): Unit = {
     // TODO: here should be preprocessing logic from /keepinmind
     val text = msg.text.get.split(':')
     chatSession.inputEventHour = Some(text(0).toInt)
@@ -308,11 +322,10 @@ object KeepInMind2 extends LazyLogging {
     chatSession.save()
 
     proceedToDurationpicker(bot, chatSession)
-
   }
 
-  def proceedToDurationpicker(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
-
+  def proceedToDurationpicker(bot: SierraBot, chatSession: ChatSession)
+                             (implicit msg: Message, ec: ExecutionContext): Unit = {
     if (chatSession.chatState != ChatState.CreatingEventInputtingTime) {
       return
     }
@@ -332,7 +345,7 @@ object KeepInMind2 extends LazyLogging {
       bot.request(
         SendMessage(
           ChatId(msg.source),
-          "Please choose the time for the event",
+          MessagesText.KEEPINMIND2_EVENT_TIME,
           replyMarkup = Some(durationpicker)
         )
       )
@@ -345,20 +358,7 @@ object KeepInMind2 extends LazyLogging {
 
   }
 
-  val DURATIONS = List(
-    5 -> "5 min",
-    10 -> "10 min",
-    15 -> "15 min",
-    30 -> "30 min",
-    45 -> "45 min",
-    60 -> "1 hour",
-    90 -> "1.5 hours",
-    120 -> "2.0 hours",
-    180 -> "3.0 hours"
-  )
-
   def createDurationpicker(): InlineKeyboardMarkup = {
-
     // scalastyle:off magic.number
     val durationpickerButtons = DURATIONS.map { duration =>
       InlineKeyboardButton.callbackData(
@@ -371,7 +371,8 @@ object KeepInMind2 extends LazyLogging {
     InlineKeyboardMarkup(durationpickerButtons)
   }
 
-  def onCallbackWithTagDuration(bot: SierraBot)(implicit cbq: CallbackQuery, ec: ExecutionContext): Unit = {
+  def onCallbackWithTagDuration(bot: SierraBot)
+                               (implicit cbq: CallbackQuery, ec: ExecutionContext): Unit = {
     // Notification only shown to the user who pressed the button.
     bot.ackCallback()
 
@@ -402,19 +403,18 @@ object KeepInMind2 extends LazyLogging {
     }
   }
 
-  def onMessageEventDuration(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
-
+  def onMessageEventDuration(bot: SierraBot, chatSession: ChatSession)
+                            (implicit msg: Message, ec: ExecutionContext): Unit = {
     // TODO: here should be preprocessing logic from /keepinmind
     chatSession.inputEventDurationInMinutes = Some(msg.text.get.toInt)
     chatSession.save()
 
     createEvent(bot, chatSession)
-
   }
 
   // scalastyle:off method.length
-  def createEvent(bot: SierraBot, chatSession: ChatSession)(implicit msg: Message, ec: ExecutionContext): Unit = {
-
+  def createEvent(bot: SierraBot, chatSession: ChatSession)
+                 (implicit msg: Message, ec: ExecutionContext): Unit = {
     val calendar = Calendar.getInstance
     calendar.set(
       chatSession.inputEventYear.get,
@@ -473,10 +473,10 @@ object KeepInMind2 extends LazyLogging {
       chatSession.resetInputs()
       chatSession.save()
 
-      "The event " + event + " is recorded. I will remind you ;)"
+      MessagesText.KEEPINMIND_DONE.format(event)
     } else {
       val stringBuilder = new StringBuilder(
-        "I'm sorry but this event intersects with another ones:\n ")
+        MessagesText.KEEPINMIND_INTERSECTIONS)
       intersectedEvents.foreach(stringBuilder.append(_).append("\n"))
       stringBuilder.toString()
     }
@@ -490,5 +490,4 @@ object KeepInMind2 extends LazyLogging {
 
   }
   // scalastyle:on method.length
-
 }

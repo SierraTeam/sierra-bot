@@ -256,5 +256,4 @@ object DbSchema extends Schema with LazyLogging {
     logger.debug("Chat sessions: " + ChatSession.getAll(None))
     logger.debug("Events: " + Event.get(None))
   }
-
 }

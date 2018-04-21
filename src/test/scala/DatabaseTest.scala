@@ -10,7 +10,6 @@ class DatabaseTest extends FlatSpec with MockFactory with Matchers {
   behavior of "The database"
 
   it should "insert and retrieve chat sessions by DBschema" in {
-
     DbSchema.init()
 
     val chatSessionsInserted = List(ChatSession.create(101, "test1", isGroup = false, ChatState.Started),
@@ -21,7 +20,6 @@ class DatabaseTest extends FlatSpec with MockFactory with Matchers {
   }
 
   it should "insert and retrieve chat sessions by chatsession companion object" in {
-
     DbSchema.init()
 
     val chatSessionsInserted = List(ChatSession.create(101, "test1", isGroup = false, ChatState.Started),

@@ -23,7 +23,8 @@ object KeepInMind extends LazyLogging {
   val TimeOnly = timeRegex.r
   val NameMeeting = nameRex.r
   val TimeDuration = duration.r
-  var regexError = 0;
+  var regexError = 0
+  private final val ONE_MINUTE_IN_MILLIS = 60000
 
 
   def verifyParameter(x: Any, y: scala.util.matching.Regex,z: Integer) = x match {
@@ -32,15 +33,15 @@ object KeepInMind extends LazyLogging {
     //  case DateOnly(d) =>  println(" - date only : "+d+arg)
     //  case TimeOnly(d) =>  println(" - time only : "+d+arg)
     case
-      test: String if y.findAllMatchIn(test).nonEmpty => logger.debug("Checked correct parameter: " +test)
+      test: String if y.findAllMatchIn(test).nonEmpty =>
+        logger.debug("Checked correct parameter: " + test)
     case _ => regexError = z;
   }
-//MessagesText.KEEPINMIND_WRONG_FORMAT_PARAMS
+
   def execute(msg: Message): String = {
     val args = Extractors.commandArguments(msg).getOrElse(
       return MessagesText.KEEPINMIND_NOT_ENOUGH_PARAMS
     )
-    val regex = MutableList[String]()
 
     var i = 0
     var indexError = 0;
@@ -57,39 +58,26 @@ object KeepInMind extends LazyLogging {
       }
     }
 
-
    val resultMatch =  regexError match {
       case 1 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM1
       case 2 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM2
       case 3 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM3
-      case 4 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM4;
+      case 4 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM4
       case _ => noError = 1; "";
     }
 
-
-    if (resultMatch != ""){
+    if (!resultMatch.equals("")){
       resultMatch.toString
-    } else
-     if (args.length != 4) {
-      MessagesText.KEEPINMIND_NOT_ENOUGH_PARAMS;
-
-    }else {
+    } else if (args.length != 4) {
+      MessagesText.KEEPINMIND_NOT_ENOUGH_PARAMS
+    } else {
 
 
-        val now = Calendar.getInstance().getTime()
-        val simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm")
-        val today = simpleDateFormat.format(now);
-        val dateToday = simpleDateFormat.parse(today)
-        var date_meeting = args(0).concat(" ").concat(args(1))
-
-        val beginDate: Date = simpleDateFormat.parse(date_meeting)
-
-        Start.execute(msg)
-        if (dateToday.before(beginDate)){
-
-          val ONE_MINUTE_IN_MILLIS = 60000
-          val duration = Integer.parseInt(args(3)) * ONE_MINUTE_IN_MILLIS
-          val endDate = new Date(beginDate.getTime() + duration)
+      Start.execute(msg)
+      val beginDate = getDate(args(0).concat(" ").concat(args(1)))
+      if (dateToday.before(beginDate)){
+      val duration = Integer.parseInt(args(3)) * ONE_MINUTE_IN_MILLIS
+      val endDate = new Date(beginDate.getTime() + duration)
 
           val intersectedEvents = ChatSession.hasIntersections(
             msg.chat.id, beginDate, endDate)
@@ -105,9 +93,13 @@ object KeepInMind extends LazyLogging {
             stringBuilder.toString()
           }
       }else {
-        logger.trace(" data antiga");
         MessagesText.EVENT_ALREADY_PASS
       }
     }
+  }
+
+  private def getDate(datetime: String) = {
+    val simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm")
+    simpleDateFormat.parse(datetime)
   }
 }

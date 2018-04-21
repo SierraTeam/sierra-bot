@@ -22,9 +22,6 @@ import scala.util.{Failure, Success}
 
 
 abstract class SierraBot extends TelegramBot with Commands with Callbacks {
-//  lazy val botName = ConfigFactory.load().getString("bot.name")
-  val botName: String =
-    "@sierraTest1bot"
   lazy val token: String = ConfigFactory.load().getString("bot.token")
 
   val NUM_OF_THREADS = 10
@@ -43,7 +40,12 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
   }
 
   onCommand("/keepinmind") {
-    implicit msg => reply(KeepInMind.execute(msg))
+    implicit msg => {
+      val args = Extractors.commandArguments(msg)
+      if (args.isEmpty || args.get.length != 4) {
+        KeepInMind2.execute(this)
+      } else reply(KeepInMind.execute(msg))
+    }
   }
 
   onCommand("/info") {
@@ -52,10 +54,6 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
 
   onCommand("/myevents") {
     implicit msg => reply(MyEvents.execute(msg))
-  }
-
-  onCommand("/keepinmind2") { implicit msg =>
-    KeepInMind2.execute(this)
   }
 
   onMessage { implicit msg =>
@@ -116,8 +114,10 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
 
   override def run(): Unit = {
     super.run()
-    val ns = new NotifierService()(ExecutionContext.fromExecutor(Executors.newCachedThreadPool()))
-    val notificationSendingActor = actorSystem.actorOf(Props(classOf[NotificationActor], this), "notificationSendingActor")
+    val ns = new NotifierService()(
+      ExecutionContext.fromExecutor(Executors.newCachedThreadPool()))
+    val notificationSendingActor =
+      actorSystem.actorOf(Props(classOf[NotificationActor], this), "notificationSendingActor")
     val timeframe = (10 seconds)  //each x seconds bot will lookup for new events and send them
     notifier = actorSystem.scheduler.schedule(0 seconds, timeframe){
       ns.sendMessages(notificationSendingActor, timeframe) onComplete {
@@ -138,8 +138,4 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
       case Failure(e) => logger.error("Message sending error: ", e)
     }
   }
-
-
-
-
 }

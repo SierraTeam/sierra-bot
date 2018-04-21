@@ -31,7 +31,8 @@ object MessagesText {
     "Now you will NOT be informed about the events in this group :)"
 
   val UNSUBSCRIBE_CANNOT: String =
-    "You cannot unsubscribe in private chats. You need to do better to get rid of me ;)"
+    "You cannot unsubscribe in private chats. " +
+      "You need to do better to get rid of me ;)"
 
   val KEEPINMIND_DONE: String =
     "The event %s is recorded. I will remind you ;)"
@@ -40,22 +41,37 @@ object MessagesText {
     "I'm sorry but this event intersects with another ones:\n "
 
   val KEEPINMIND_NOT_ENOUGH_PARAMS: String =
-    "Create an event requires 4 parameters date, hour, name and duration(min)"
+    "Create an event requires 4 parameters date, hour, name and duration(min). " +
+      "Or you can just use /keepinmind command and I will ask you explicitly all I need ;)"
 
   val KEEPINMIND_CORRECT_PARAMS: String =
     "Try again with correct parameters"
 
   val KEEPINMIND_WRONG_FORMAT_PARAM1: String =
-    "The date, first parameter should follow the format dd.mm.YYYY"
+    "The date, first parameter, should follow the format dd.mm.YYYY"
 
   val KEEPINMIND_WRONG_FORMAT_PARAM2: String =
-    "The hour, second parameter should follow the format HH:MM"
+    "The time, second parameter, should follow the format HH:MM"
 
   val KEEPINMIND_WRONG_FORMAT_PARAM3: String =
-    "The name, third parameter should follow the format letters and/or numbers"
+    "The name, third parameter, should follow the format letters and/or numbers"
 
   val KEEPINMIND_WRONG_FORMAT_PARAM4: String =
-    "The duration, fourth parameter should be a number"
+    "The duration, fourth parameter, should be a number"
+
+  val KEEPINMIND2_EVENT_NAME: String =
+    "Alright, a new event. How are we going to call it? " +
+      "Please choose a name for an event."
+
+  val KEEPINMIND2_EVENT_DATE: String =
+    "Good. Now let's choose a date for your event. " +
+      "Use the calendar widget to enter the planned date."
+
+  val KEEPINMIND2_EVENT_TIME: String =
+    "Please choose the time for the event"
+
+  val KEEPINMIND2_EVENT_DURATION: String =
+    ""
 
   val NOTIFICATION: String =
     "I want to remind you that you have an event '%s' at %s"
