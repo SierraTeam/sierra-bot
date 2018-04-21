@@ -23,4 +23,10 @@ libraryDependencies ++= Seq(
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
 )
 
+libraryDependencies += "com.google.api-client" % "google-api-client" % "1.23.0"
+libraryDependencies += "com.google.oauth-client" % "google-oauth-client-jetty" % "1.23.0"
+libraryDependencies += "com.google.apis" % "google-api-services-calendar" % "v3-rev308-1.23.0"
+
 enablePlugins(JavaAppPackaging)
+
+

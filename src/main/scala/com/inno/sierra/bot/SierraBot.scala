@@ -13,9 +13,11 @@ import info.mukel.telegrambot4s.models._
 import java.util.concurrent.Executors
 
 import akka.actor.{ActorSystem, Cancellable, Props}
+import com.inno.sierra.Quickstart
 
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
+
 import scala.collection.mutable.MutableList
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -48,6 +50,12 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
 
    onCommand("/info") {
     implicit msg => reply(Info.execute(msg))
+  }
+
+  onCommand("/SyncMeWithGoogle") {
+
+
+    implicit msg =>reply(SyncGoogle.checkFree().toString)
   }
   
   /**
