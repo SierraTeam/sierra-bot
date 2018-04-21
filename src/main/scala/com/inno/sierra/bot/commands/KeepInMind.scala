@@ -11,11 +11,12 @@ import info.mukel.telegrambot4s.models.Message
 import scala.collection.mutable
 import scala.collection.mutable.MutableList
 import com.typesafe.scalalogging.LazyLogging
+import java.util.Date
 
 
 object KeepInMind extends LazyLogging {
   val dateRegex = """([0-9]{1,2}[.][0-9]{1,2}[.][0-9]{4})"""
-  val timeRegex = """([0-9]{2}:[0-9]{2})"""
+  val timeRegex = """([0-9]{2}[:][0-9]{2})"""
   var nameRex = """([A-Za-z0-9]{1,30})"""
   val duration = """([0-9]{1,4})"""
   val DateOnly = dateRegex.r
@@ -51,17 +52,11 @@ object KeepInMind extends LazyLogging {
         logger.trace(listRegex(i).toString());
         indexError = i+1
         verifyParameter(arg, listRegex(i),indexError)
-        //  val unMactchParamerter = verifyParameter(arg,listRegex(i));
-        //  if(unMactchParamerter == true){
-        //   return "Wrong format of parameter"
-        //   }
         i += 1
         logger.trace(arg)
       }
     }
 
-
-    logger.debug("error regex: " +regexError)
 
    val resultMatch =  regexError match {
       case 1 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM1
@@ -74,35 +69,44 @@ object KeepInMind extends LazyLogging {
 
     if (resultMatch != ""){
       resultMatch.toString
-     // logger.debug("mensagem de erro regex: " )
-
     } else
      if (args.length != 4) {
       MessagesText.KEEPINMIND_NOT_ENOUGH_PARAMS;
 
-    }else  {
-      Start.execute(msg)
+    }else {
 
-      var date_meeting = args(0).concat(" ").concat(args(1))
-      val simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm")
-      val beginDate: Date = simpleDateFormat.parse(date_meeting)
 
-      val ONE_MINUTE_IN_MILLIS = 60000
-      val duration = Integer.parseInt(args(3)) * ONE_MINUTE_IN_MILLIS
-      val endDate = new Date(beginDate.getTime() + duration)
+        val now = Calendar.getInstance().getTime()
+        val simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm")
+        val today = simpleDateFormat.format(now);
+        val dateToday = simpleDateFormat.parse(today)
+        var date_meeting = args(0).concat(" ").concat(args(1))
 
-      val intersectedEvents = ChatSession.hasIntersections(
-        msg.chat.id, beginDate, endDate)
-      logger.debug(intersectedEvents.toString)
+        val beginDate: Date = simpleDateFormat.parse(date_meeting)
 
-      if (intersectedEvents.isEmpty) {
-        val event = Event.create(msg.chat.id, beginDate, args(2), endDate)
-        MessagesText.KEEPINMIND_DONE.format(event)
-      } else {
-        val stringBuilder = new StringBuilder(
-          MessagesText.KEEPINMIND_INTERSECTIONS)
-        intersectedEvents.foreach(stringBuilder.append(_).append("\n"))
-        stringBuilder.toString()
+        Start.execute(msg)
+        if (dateToday.before(beginDate)){
+
+          val ONE_MINUTE_IN_MILLIS = 60000
+          val duration = Integer.parseInt(args(3)) * ONE_MINUTE_IN_MILLIS
+          val endDate = new Date(beginDate.getTime() + duration)
+
+          val intersectedEvents = ChatSession.hasIntersections(
+            msg.chat.id, beginDate, endDate)
+          logger.debug(intersectedEvents.toString)
+
+          if (intersectedEvents.isEmpty) {
+            val event = Event.create(msg.chat.id, beginDate, args(2), endDate)
+            MessagesText.KEEPINMIND_DONE.format(event)
+          } else {
+            val stringBuilder = new StringBuilder(
+              MessagesText.KEEPINMIND_INTERSECTIONS)
+            intersectedEvents.foreach(stringBuilder.append(_).append("\n"))
+            stringBuilder.toString()
+          }
+      }else {
+        logger.trace(" data antiga");
+        MessagesText.EVENT_ALREADY_PASS
       }
     }
   }
