@@ -11,7 +11,7 @@ object CancelEvent {
     val args = Extractors.commandArguments(msg).get
 
     if (args.isEmpty) {
-      val events = DbSchema.getAll[Event](None)
+      val events = DbSchema.getAllUpcomingEventsForUser(msg.chat.id)
       if (events.nonEmpty) {
         val buttons = events.map(e =>
           InlineKeyboardButton.callbackData(e.name, "event-" + e.id))
