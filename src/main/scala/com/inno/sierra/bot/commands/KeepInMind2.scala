@@ -51,7 +51,9 @@ object KeepInMind2 extends LazyLogging {
           onMessageEventTime(bot, chatSession)
         case ChatState.CreatingEventInputtingDuration =>
           onMessageEventDuration(bot, chatSession)
-        case _ => logger.debug("not applicable to keepinmind2"); return// do nothing
+        case _ =>
+          logger.debug("not applicable to keepinmind2")
+          Unit // do nothing
       }
     }
   }
@@ -134,12 +136,12 @@ object KeepInMind2 extends LazyLogging {
         header,
         daysOfWeek
       )
-        ++
-        body
-        ++
-        Seq(
-          footer
-        )
+      ++
+      body
+      ++
+      Seq(
+        footer
+      )
     )
   }
   // scalastyle:on method.length
@@ -418,7 +420,7 @@ object KeepInMind2 extends LazyLogging {
     val calendar = Calendar.getInstance
     calendar.set(
       chatSession.inputEventYear.get,
-      chatSession.inputEventMonth.get,
+      chatSession.inputEventMonth.get - 1,
       chatSession.inputEventDay.get,
       chatSession.inputEventHour.get,
       chatSession.inputEventMinutes.get
