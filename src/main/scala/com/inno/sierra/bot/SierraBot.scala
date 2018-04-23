@@ -36,7 +36,7 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     implicit msg => {
       val args = Extractors.commandArguments(msg)
       if (args.isEmpty || args.get.length != 4) {
-        KeepInMind2.execute(this)
+        KeepInMindGui.execute(this)
       } else reply(KeepInMind.execute(this))
     }
   }
@@ -54,27 +54,27 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
   }
 
   onMessage { implicit msg =>
-    KeepInMind2.onMessage(this)
+    KeepInMindGui.onMessage(this)
   }
 
   onCallbackWithTag("ignore") { implicit cbq =>
-    KeepInMind2.onCallbackWithTagIgnore(this)
+    KeepInMindGui.onCallbackWithTagIgnore(this)
   }
 
-  onCallbackWithTag(KeepInMind2.CALENDAR_DAY_TAG) { implicit cbq =>
-    KeepInMind2.onCallbackWithTagCalendarDay(this)
+  onCallbackWithTag(KeepInMindGui.CALENDAR_DAY_TAG) { implicit cbq =>
+    KeepInMindGui.onCallbackWithTagCalendarDay(this)
   }
 
   onCallbackWithTag("month-") { implicit cbq =>
-    KeepInMind2.onCallbackWithTagMonth(this)
+    KeepInMindGui.onCallbackWithTagMonth(this)
   }
 
   onCallbackWithTag("timepicker-") { implicit cbq =>
-    KeepInMind2.onCallbackWithTagTimepicker(this)
+    KeepInMindGui.onCallbackWithTagTimepicker(this)
   }
 
   onCallbackWithTag("duration-") { implicit cbq =>
-    KeepInMind2.onCallbackWithTagDuration(this)
+    KeepInMindGui.onCallbackWithTagDuration(this)
   }
 
   onCallbackWithTag("event-") { implicit cbq =>
