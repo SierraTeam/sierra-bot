@@ -33,10 +33,10 @@ object KeepInMind extends LazyLogging {
       logger.debug(listRegex(i).toString())
       if (listRegex(i).findAllMatchIn(arg).isEmpty) {
         val result = i match {
-          case 1 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM1
-          case 2 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM2
-          case 3 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM3
-          case 4 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM4
+          case 0 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM1
+          case 1 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM2
+          case 2 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM3
+          case 3 => MessagesText.KEEPINMIND_WRONG_FORMAT_PARAM4
         }
         return Some(result)
       }
@@ -61,10 +61,11 @@ object KeepInMind extends LazyLogging {
 
     } else {
       Start.execute(msg)
+
       val dateToday = Utils.simpleDateTimeFormat
         .parse(Utils.simpleDateTimeFormat.format(Calendar.getInstance().getTime))
       val beginDate = Utils.simpleDateTimeFormat
-        .parse(args.head.concat(" ").concat(args(1)))
+        .parse(args(0).concat(" ").concat(args(1)))
 
       if (dateToday.before(beginDate)){
         val duration = Integer.parseInt(args(3)) * ONE_MINUTE_IN_MILLIS
@@ -73,6 +74,9 @@ object KeepInMind extends LazyLogging {
         if (msg.chat.`type`.equals(ChatType.Private)) {
           val intersectedEvents = ChatSession.hasIntersections(
             msg.chat.id, beginDate, endDate)
+
+          logger.debug(msg.chat.id.toString)
+          logger.debug(beginDate + " - " + endDate + ": " + intersectedEvents)
 
           if (intersectedEvents.isEmpty) {
             val event = Event.create(msg.chat.id, beginDate, args(2), endDate)

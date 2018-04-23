@@ -86,6 +86,15 @@ object MessagesText {
   val CANCEL_MISSING_PARAM: String =
     "Please specify number of event you want to cancel"
 
+  val SUGGESTTIME_DONE: String =
+    "You can use any time slots beyond the following busy ones: \n"
+
+  val SUGGESTTIME_NOT_ENOUGH_PARAMS: String =
+    "Please provide the day, for which you need a recommendation :)"
+
+  val SUGGESTTIME_DAY_FREE: String =
+    "It seems that the whole day is free for now :)"
+
   val NOTIFICATION: String =
     "I want to remind you that you have an event '%s' at %s"
 

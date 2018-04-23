@@ -1,7 +1,7 @@
 package com.inno.sierra.model
 
 import java.sql.Timestamp
-import java.util.Date
+import java.util.{Calendar, Date}
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
@@ -192,7 +192,7 @@ object DbSchema extends Schema with LazyLogging {
   }
 
   def getAllUpcomingEventsForUser(csid: Long) = {
-    val beginDate = new Timestamp(new Date getTime)
+    val beginDate = new Timestamp(new Date().getTime)
     val result = ListBuffer[Event]()
     transaction {
       from(events, csEvents, chatSessions)((e, cse, cs) =>
@@ -204,6 +204,27 @@ object DbSchema extends Schema with LazyLogging {
       logger.debug(result.toString)
       result
     }
+  }
+
+  def getAllEventsForDay(csid: Long, day: Date): List[Event] = {
+    val c = Calendar.getInstance()
+    c.setTimeInMillis(day.getTime())
+    c.set(Calendar.HOUR_OF_DAY, 0)
+    c.set(Calendar.MINUTE, 0)
+    c.set(Calendar.SECOND, 0)
+    c.set(Calendar.MILLISECOND, 0)
+    val beginDate = new Timestamp(c.getTimeInMillis)
+
+    c.set(Calendar.HOUR_OF_DAY, 23)
+    c.set(Calendar.MINUTE, 59)
+    c.set(Calendar.SECOND, 59)
+    c.set(Calendar.MILLISECOND, 0)
+    val endDate = new Timestamp(c.getTimeInMillis)
+
+    logger.debug("searching for events for " + csid + " at " + beginDate + " - " + endDate)
+    val result = getEventsWithLimits(csid, beginDate, endDate)
+    logger.debug("found: " + result)
+    result
   }
 
   def getChatSessionByChatId(chatId: Long) = {
@@ -220,19 +241,19 @@ object DbSchema extends Schema with LazyLogging {
     }
   }
 
-  def hasIntersections(csid: Long, beginDate: Timestamp, endDate: Timestamp) = {
+  def getEventsWithLimits(csid: Long, beginDate: Timestamp, endDate: Timestamp) = {
     val result = ListBuffer[Event]()
     transaction {
       from(events, csEvents, chatSessions)((e, cse, cs) =>
         where(
           cse.eventId === e.id and cse.chatSessionId === cs.id and cs.csid === csid and
-            ((e.beginDate.lt(beginDate) and e.endDate.gt(beginDate)) or
-              (e.beginDate.lt(endDate) and e.endDate.gt(endDate)) or
-              (e.beginDate.gt(beginDate) and e.endDate.lt(endDate))
+            ((e.beginDate.lte(beginDate) and e.endDate.gte(beginDate)) or
+              (e.beginDate.lte(endDate) and e.endDate.gte(endDate)) or
+              (e.beginDate.gte(beginDate) and e.endDate.lte(endDate))
               )
         ).select(e))
         .foreach(e => result += e)
-      result
+      result.toList
     }
   }
 

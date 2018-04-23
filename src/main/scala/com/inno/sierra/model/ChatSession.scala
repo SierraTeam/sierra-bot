@@ -133,7 +133,11 @@ object ChatSession {
   def hasIntersections(csid: Long, beginDate: Date, endDate: Date) = {
     val begin = new Timestamp(beginDate.getTime)
     val end = new Timestamp(endDate.getTime)
-    DbSchema.hasIntersections(csid, begin, end)
+    DbSchema.getEventsWithLimits(csid, begin, end)
+  }
+
+  def getEventsForDay(csid: Long, day: Date) = {
+    DbSchema.getAllEventsForDay(csid, day)
   }
 
   def addUserToGroup(groupChatId: Long,

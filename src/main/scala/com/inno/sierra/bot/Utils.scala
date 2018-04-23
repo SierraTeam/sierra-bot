@@ -8,4 +8,5 @@ object Utils {
   val timePattern: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
   val simpleDateTimeFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm")
+  val simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy")
 }
