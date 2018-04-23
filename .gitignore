@@ -72,3 +72,4 @@ jrebel.lic
 *.log
 *application.conf
 reference.conf
+client_secret.json

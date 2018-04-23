@@ -11,6 +11,17 @@ import info.mukel.telegrambot4s.methods.SendMessage
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import info.mukel.telegrambot4s.methods.{DeleteMessage, EditMessageReplyMarkup, GetMe, SendMessage}
+import info.mukel.telegrambot4s.models._
+import java.util.concurrent.Executors
+
+import akka.actor.{ActorSystem, Cancellable, Props}
+
+import scala.concurrent.duration._
+import com.typesafe.config.ConfigFactory
+
+import scala.collection.mutable.MutableList
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 
@@ -79,6 +90,14 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
 
   onCallbackWithTag("event-") { implicit cbq =>
     CancelEvent.onCallbackWithTagEvent(this)
+  }
+
+  onCommand("/SyncMeWithGoogle", "sync") { implicit msg =>
+    SyncGoogle.checkFree(this)
+  }
+
+  onMessage { implicit msg =>
+    SyncGoogle.onMessage(this)
   }
 
   val actorSystem = ActorSystem("telegramNotification")

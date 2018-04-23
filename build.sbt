@@ -20,7 +20,10 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.3.2",
   "org.scalamock" %% "scalamock" % "4.1.0" % Test,
   "ch.qos.logback" % "logback-classic" % "1.2.3",
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
+  "com.google.api-client" % "google-api-client" % "1.23.0",
+  "com.google.oauth-client" % "google-oauth-client-jetty" % "1.23.0",
+  "com.google.apis" % "google-api-services-calendar" % "v3-rev308-1.23.0"
 )
 
 enablePlugins(JavaAppPackaging)

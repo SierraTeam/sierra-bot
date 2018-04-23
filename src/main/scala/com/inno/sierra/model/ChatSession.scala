@@ -16,6 +16,7 @@ object ChatState extends Enumeration {
     val CreatingEventInputtingTime = Value(4, "CreatingEventInputtingTime")
     val CreatingEventInputtingDuration = Value(5, "CreatingEventInputtingDuration")
     val EditingEvent = Value(6, "EditingEvent")
+    val AuthorizingGoogleCalendar = Value(7, "AuthorizingGoogleCalendar")
   }
 
 /**
