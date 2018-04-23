@@ -111,10 +111,10 @@ object DbSchema extends Schema with LazyLogging {
 
   /**
     * Inserts the entity into the database.
-    *
     * @param entity entity
     * @tparam T type of the entity
     * @return the inserted entity
+    * @throws IllegalArgumentException if the type is not supported
     */
   def insert[T](entity: T): T = {
     val result = entity match {
@@ -130,7 +130,6 @@ object DbSchema extends Schema with LazyLogging {
 
   /**
     * Updates the entity in the database.
-    *
     * @param entity entity
     * @tparam T type of the entity
     */
@@ -147,9 +146,9 @@ object DbSchema extends Schema with LazyLogging {
 
   /**
     * Deletes the entity by its id.
-    *
     * @param id id of the entity. In case of ChatSessionEvents use eventId
     * @tparam T type of the entity
+    * @throws IllegalArgumentException if the type is not supported
     */
   def delete[T: TypeTag](id: Long): Unit = typeOf[T] match {
     case t if t =:= typeOf[ChatSession] =>
@@ -241,8 +240,9 @@ object DbSchema extends Schema with LazyLogging {
     }
   }
 
-  def getEventsWithLimits(csid: Long, beginDate: Timestamp, endDate: Timestamp) = {
-    val result = ListBuffer[Event]()
+  def getEventsWithLimits(csid: Long,
+                          beginDate: Timestamp,
+                          endDate: Timestamp): List[Event] = {
     transaction {
       from(events, csEvents, chatSessions)((e, cse, cs) =>
         where(
@@ -251,9 +251,7 @@ object DbSchema extends Schema with LazyLogging {
               (e.beginDate.lte(endDate) and e.endDate.gte(endDate)) or
               (e.beginDate.gte(beginDate) and e.endDate.lte(endDate))
               )
-        ).select(e))
-        .foreach(e => result += e)
-      result.toList
+        ).select(e)).toList
     }
   }
 

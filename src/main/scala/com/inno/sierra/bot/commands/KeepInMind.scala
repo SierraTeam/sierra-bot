@@ -104,7 +104,8 @@ object KeepInMind extends LazyLogging {
 
             if (intersectedEvents.nonEmpty) {
               val stringBuilder = new StringBuilder(
-                MessagesText.KEEPINMIND_INTERSECTIONS_PRIVATE_GROUP.format(msg.chat.title))
+                MessagesText.KEEPINMIND_INTERSECTIONS_PRIVATE_GROUP
+                  .format(msg.chat.title.getOrElse("Unknown")))
               intersectedEvents.foreach(stringBuilder.append(_).append("\n"))
               bot.sendMessage(m.csid, stringBuilder.toString())
               intersectedMembers.append(m.alias)
