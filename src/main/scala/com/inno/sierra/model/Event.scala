@@ -7,6 +7,14 @@ import java.util.Date
 
 import com.inno.sierra.bot.Utils
 
+/**
+  * Represents the scheduled event.
+  * @param id
+  * @param beginDate
+  * @param name
+  * @param endDate
+  * @param isNotified
+  */
 case class Event private (
             var id: Long,
             var beginDate: Timestamp,
@@ -20,6 +28,9 @@ case class Event private (
   }
 }
 
+/**
+  * Factory object for communication with the database.
+  */
 object Event {
   def create(chatId: Long, beginDate: Date, name: String, endDate: Date): Event = {
     val begin = new Timestamp(beginDate.getTime)

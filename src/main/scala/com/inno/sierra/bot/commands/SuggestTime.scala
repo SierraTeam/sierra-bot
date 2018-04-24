@@ -8,7 +8,19 @@ import info.mukel.telegrambot4s.models.{ChatType, Message}
 
 import scala.collection.mutable.ListBuffer
 
+/**
+  * Suggests time, when the events can be conducted.
+  * In groups - will show the available time for all the
+  * subscribed users in the group.
+  * In private chats - will show the available time for the user.
+  */
 object SuggestTime extends LazyLogging {
+
+  /**
+    * Executes the command.
+    * @param msg  the message to process
+    * @return response to the user
+    */
   def execute(msg: Message): String = {
     val args = Extractors.commandArguments(msg).get
     if (args.isEmpty) return MessagesText.SUGGESTTIME_NOT_ENOUGH_PARAMS
@@ -23,7 +35,7 @@ object SuggestTime extends LazyLogging {
       if (chat.`type`.equals(ChatType.Private)) {
         List[ChatSession](ChatSession.getByChatId(chat.id).get)
       } else {
-        ChatSession.getMembersOfGroup(chat.id) // TODO: at the chat itself
+        ChatSession.getMembersOfGroup(chat.id) // TODO: add the chat itself
       }
 
     logger.debug(chatSessions.toString)

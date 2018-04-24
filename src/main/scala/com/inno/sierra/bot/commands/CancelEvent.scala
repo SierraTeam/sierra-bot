@@ -5,8 +5,16 @@ import com.inno.sierra.model.{ChatSessionEvents, DbSchema, Event}
 import info.mukel.telegrambot4s.api.Extractors
 import info.mukel.telegrambot4s.models.{CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message}
 
+/**
+  * Cancels the event by id or with using GUI.
+  */
 object CancelEvent {
 
+  /**
+    * Executes the command.
+    * @param msg  the message to process
+    * @return response to the user
+    */
   def execute(bot: SierraBot)(implicit msg: Message): Unit = {
     val args = Extractors.commandArguments(msg).get
 

@@ -13,24 +13,35 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.runtime.universe._
 
 
+/**
+  * The intermidiary in the communications with the database.
+  * Uses Squeryl ORM.
+  */
 object DbSchema extends Schema with LazyLogging {
   private val conf = ConfigFactory.load()
-  // -----Initialize a connection with DB
-  val driver = conf.getString("db.driver")
-  val adapter = driver match {
-    case "h2" => {
+
+  /**
+    * Loads the configuration of the database.
+    * Can work with H2 database.
+    */
+  private val driver = conf.getString("db.driver")
+  private val adapter = driver match {
+    case "h2" =>
       Class.forName("org.h2.Driver")
       new H2Adapter
-    }
-    case "postgresql" => {
+
+    case "postgresql" => // TODO: not tested, maybe doesn't work
       Class.forName("org.postgresql.Driver")
       new PostgreSqlAdapter
-    }
-    case _ => {
+
+    case _ =>
       throw new NotImplementedError("Unsupported database driver")
-    }
   }
 
+  /**
+    * The necessary database's session initialisation.
+    * Without it transaction function will not work.
+    */
   SessionFactory.concreteFactory = Some(() =>
     Session.create(
       java.sql.DriverManager.getConnection(
@@ -44,13 +55,13 @@ object DbSchema extends Schema with LazyLogging {
 
 
   // -----Define tables-----
-  val chatSessions = table[ChatSession]
-  val events = table[Event]
-  val csEvents = manyToManyRelation(chatSessions, events).
+  private val chatSessions = table[ChatSession]
+  private val events = table[Event]
+  private val csEvents = manyToManyRelation(chatSessions, events).
     via[ChatSessionEvents](
     (cs, e, cse) => (cse.eventId === e.id, cs.id === cse.chatSessionId)
   )
-  val groupMembers = manyToManyRelation(chatSessions, chatSessions).
+  private val groupMembers = manyToManyRelation(chatSessions, chatSessions).
     via[GroupMembers](
     (gr, mem, grm) => (grm.groupId === gr.id, grm.memberId === mem.id)
   )
@@ -166,21 +177,29 @@ object DbSchema extends Schema with LazyLogging {
         g.groupId === gm.groupId and g.memberId === gm.memberId))
   }
 
+  /**
+    * Returns members of the groupby its chatsession id.
+    * @param csid chatsession id
+    * @return the list of chatsessions
+    */
   def getMembers(csid: Long): List[ChatSession] = {
     val group = getChatSessionByChatId(csid).getOrElse(
       return List[ChatSession]()
     )
-    val result = ListBuffer[ChatSession]()
     transaction {
       from(groupMembers, chatSessions)((gm, cs) =>
         where(
           gm.memberId === cs.id and gm.groupId === group.id
-        ).select(cs))
-        .foreach(cs => result += cs)
-      result.toList
+        ).select(cs)).toList
     }
   }
 
+  /**
+    * Returns all the events to the specified date.
+    * @param date the date to which the events returned
+    * @param isNotified only unnotified events are returned
+    * @return
+    */
   def getAllEventsTillDate(date: Date, isNotified: Boolean = false): List[Event] = {
     val stamp = new Timestamp(date.getTime)
     transaction {
@@ -190,24 +209,33 @@ object DbSchema extends Schema with LazyLogging {
     }
   }
 
-  def getAllUpcomingEventsForUser(csid: Long) = {
+  /**
+    * Returns all the upcoming events for the user
+    * specified by chatsession id.
+    * @param csid chatsession id
+    * @return list of events
+    */
+  def getAllUpcomingEventsForUser(csid: Long): List[Event] = {
     val beginDate = new Timestamp(new Date().getTime)
-    val result = ListBuffer[Event]()
     transaction {
       from(events, csEvents, chatSessions)((e, cse, cs) =>
         where(
           cse.eventId === e.id and cse.chatSessionId === cs.id and cs.csid === csid and
             e.beginDate.gt(beginDate)
-        ).select(e))
-        .foreach(e => result += e)
-      logger.debug(result.toString)
-      result
+        ).select(e)).toList
     }
   }
 
+  /**
+    * Returns the events for the specified chatsession id
+    * (does not matter personal or group) for the specified day.
+    * @param csid chatsession id
+    * @param day  date of the day of interest
+    * @return
+    */
   def getAllEventsForDay(csid: Long, day: Date): List[Event] = {
     val c = Calendar.getInstance()
-    c.setTimeInMillis(day.getTime())
+    c.setTimeInMillis(day.getTime)
     c.set(Calendar.HOUR_OF_DAY, 0)
     c.set(Calendar.MINUTE, 0)
     c.set(Calendar.SECOND, 0)
@@ -220,26 +248,17 @@ object DbSchema extends Schema with LazyLogging {
     c.set(Calendar.MILLISECOND, 0)
     val endDate = new Timestamp(c.getTimeInMillis)
 
-    logger.debug("searching for events for " + csid + " at " + beginDate + " - " + endDate)
-    val result = getEventsWithLimits(csid, beginDate, endDate)
-    logger.debug("found: " + result)
-    result
+    getEventsWithLimits(csid, beginDate, endDate)
   }
 
-  def getChatSessionByChatId(chatId: Long) = {
-    transaction {
-      from(chatSessions)(cs => where(cs.csid === chatId).select(cs)).headOption
-    }
-  }
-
-  def getChatSessionByEventId(eventId: Long) = {
-    transaction {
-      val chatId = from(csEvents)(
-        s => where(s.eventId === eventId).select(s)).head.chatSessionId
-      from(chatSessions)(cs => where(cs.id === chatId).select(cs)).head
-    }
-  }
-
+  /**
+    * Returns the events which intersect with
+    * the dates specified for the specified chatsession.
+    * @param csid chatsession id
+    * @param beginDate  starting date
+    * @param endDate  finishing date
+    * @return list of events
+    */
   def getEventsWithLimits(csid: Long,
                           beginDate: Timestamp,
                           endDate: Timestamp): List[Event] = {
@@ -256,7 +275,32 @@ object DbSchema extends Schema with LazyLogging {
   }
 
   /**
-    * Initializes the database and fills it with test data.
+    * Returns chatsession by chatsession id
+    * @param csid chatsession id
+    * @return Option of Chatsession
+    */
+  def getChatSessionByChatId(csid: Long): Option[ChatSession] = {
+    transaction {
+      from(chatSessions)(cs => where(cs.csid === csid).select(cs)).headOption
+    }
+  }
+
+  /**
+    * Returns the chatsession to which the event specified
+    * by its id is assigned.
+    * @param eventId  event's id
+    * @return ChatSession
+    */
+  def getChatSessionByEventId(eventId: Long): ChatSession = {
+    transaction {
+      val chatId = from(csEvents)(
+        s => where(s.eventId === eventId).select(s)).head.chatSessionId
+      from(chatSessions)(cs => where(cs.id === chatId).select(cs)).head
+    }
+  }
+
+  /**
+    * Initializes the database.
     */
   def init(): Unit = {
     // Recreate DB
@@ -266,17 +310,5 @@ object DbSchema extends Schema with LazyLogging {
       DbSchema.create
     }
     logger.debug("db is initialized")
-
-    /*ChatSession.create(103478185, "ilyavy", false, ChatState.Start)
-    Event.create(103478185, new Date((new Date()).getTime + 300000),
-      "Test delayed", new Date((new Date()).getTime + 600000))*/
-
-    /*ChatSession.create(101, "ax_yv", ChatState.Start)
-    ChatSession.create(102, "happy_marmoset", ChatState.Start)
-    ChatSession.create(104, "julioreis22", ChatState.Start)
-    ChatSession.create(105, "martincfx", ChatState.Start)*/
-
-    logger.debug("Chat sessions: " + ChatSession.getAll(None))
-    logger.debug("Events: " + Event.get(None))
   }
 }

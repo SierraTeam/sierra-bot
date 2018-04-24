@@ -1,6 +1,6 @@
 # Sierra Bot #
 
-## User manual ##
+## User manual - Functionality ##
 
 This bot is a simple assistant that provides the following functionality:
 * /start: Starts this bot.
@@ -10,7 +10,10 @@ Parameters are date, time, name of the event and its duration in minutes.
 * /myevents:  Displays list of all events scheduled for you.
 * /cancelevent:  Cancels the event. Id of event can be passed as a parameter.
 * /info:  Displays description (this text).
-* /exit:  TODO.
+* /subscribe: Subscribes to the group events.
+* /unsubscribe: Unsubscribes from the group events.
+* /suggesttime: Suggests the time suitable for all the subscribed users for a specified day.
+Example: /suggesttime 24.04.2018
 
 First of all, start the bot using /start  
 
@@ -25,21 +28,53 @@ Also you can use /cancelevent 1 to cancel the event number 1.
 
 To see the the instructions type /info
 
+In order to participate in group events (be accounted when the event is 
+been created and been notified), you need to /subscribe in the group. Later, if you changed 
+your mind, you can /unsubscribe.
+
+(PARTIALLY IMPLEMENTED - shows only the list of planned events for all the subscribed users) 
+In order to facilitate the process of finding the suitable time for everybody, you can use 
+/suggesttime command with the date provided. Example: /suggesttime 24.04.2018.
+
+(PROTOTYPE - branch "feature/google-calendar", bot does not remember the token yet) You can authorize your Google Calendar account with the bot, so that it could
+check your schedule in Google Calendar as well in order to find suitable time for you. 
+
 ## Build & Run ##
 
-Make a copy of reference settings and then configure application.conf for your needs:
-
+In order to run the bot you need to create the file with the configuration:
 ```sh
-cp ./src/main/resources/reference.conf ./src/main/resources/application.conf
+/src/main/resources/application.conf
+```
+The content should be as follows (you need to replace the settings with yours):
+```sh
+bot{
+  token = "9999999YOUR-BOT-TOKEN99999999"
+}
+
+db{
+  connection = "jdbc:h2:~/sierrabot"
+  username = "sa"
+  password = ""
+}
+```
+
+Reference configuration file is used for deployment at Heroku.
+```sh
+/src/main/resources/reference.conf
 ```
 
 To run the bot use sbt:
-
 ```sh
 $ cd sierra-bot
 $ sbt
 > compile
 > run
+```
+
+## Additional Information ##
+There is a code analyser set up, the settings are in the following file:
+```sh
+/project/scalastyle-config.xml
 ```
 
 ## Deploy on Heroku ##
@@ -62,10 +97,9 @@ $ sbt
 > deployHeroku
 ```
 
-## Test (TODO) ##
+## Test ##
 
 To run tests:
-
 ```sh
 $ sbt test
 ```

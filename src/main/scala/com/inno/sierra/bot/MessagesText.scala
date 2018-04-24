@@ -1,5 +1,8 @@
 package com.inno.sierra.bot
 
+/**
+  * Constant data manager used for storing all the messages bot can send.
+  */
 object MessagesText {
 
   val INFO: String =
@@ -12,7 +15,6 @@ object MessagesText {
       |/myevents:  Displays list of all events scheduled for you.
       |/cancelevent:  Cancels the event. Id of event can be passed as a parameter.
       |/info:  Displays description (this text).
-      |/exit:  TODO.
       """.stripMargin
 
   val START_FIRST_TIME: String =

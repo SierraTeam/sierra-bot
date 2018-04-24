@@ -2,12 +2,18 @@ package com.inno.sierra.model
 
 import java.sql.Timestamp
 import java.util.Date
+
+import com.inno.sierra.model.ChatState.ChatState
 import org.squeryl.KeyedEntity
 import org.squeryl.PrimitiveTypeMode._
 import org.squeryl.annotations.Column
 
 import scala.collection.mutable
 
+/**
+  * Possible chat states defined for a chatsession.
+  * Needed for GUI.
+  */
 object ChatState extends Enumeration {
     type ChatState = Value
     val Started = Value(1, "Started")
@@ -19,6 +25,8 @@ object ChatState extends Enumeration {
   }
 
 /**
+  * Represents a Chat Session of the bot with some user (private) or
+  * an instance of a group chat, where the bot has been added.
   * There are many inconviniencies with using Squeryl
   * with enum fields, therefore chatState is stored as Int
   * @param id - id will be assigned automatically by ORM
@@ -48,12 +56,14 @@ case class ChatSession (
   def chatState: ChatState.ChatState = {
     ChatState.values.find(_.id == _chatState).get
   }
-  // scalastyle:off method.name
   def chatState_=(chatStateNew: ChatState.ChatState): Unit = {
     _chatState = chatStateNew.id
   }
-  // scalastyle:on method.name
 
+  /**
+    * Reset the state of chatsession related to
+    * the process of interaction with Telegram GUI.
+    */
   def resetInputs(): Unit = {
     inputEventName = None
     inputEventYear = None
@@ -67,6 +77,11 @@ case class ChatSession (
     inputDurationpickerMessageId = None
   }
 
+  /**
+    * Returns the date of the event, which is currently
+    * been added as a part of /keepinmind with GUI command.
+    * @return
+    */
   def getEventDate: String = {
     val eventDateStr = for {
       year <- inputEventYear
@@ -78,6 +93,11 @@ case class ChatSession (
     eventDateStr.getOrElse("None")
   }
 
+  /**
+    * Returns the time of the event, which is currently
+    * been added as a part of /keepinmind with GUI command.
+    * @return
+    */
   def getEventTime: String = {
     val eventTimeStr = for {
       hour <- inputEventHour
@@ -88,33 +108,56 @@ case class ChatSession (
     eventTimeStr.getOrElse("None")
   }
 
-  def save() = DbSchema.update(this)
+  /**
+    * Saves the changes in this chatsession into
+    * the database.
+    */
+  def save(): Unit = DbSchema.update(this)
 
+  /**
+    * Returns the members of this chatsession.
+    * If it is not a group, returns the empty list.
+    * @return
+    */
   def getMembers(): List[ChatSession] = {
-    DbSchema.getMembers(csid)
+    if (isGroup) {
+      DbSchema.getMembers(csid)
+    } else List[ChatSession]()
   }
 }
 
-
+/**
+  * Factory object, is used to access the ChatSession objects
+  * uniformely using the connection with the database.
+  */
 object ChatSession {
-  val DEFAULT_STATE = ChatState.Started
+  val DEFAULT_STATE: ChatState = ChatState.Started
 
+  /**
+    * Creates the ChatSession described by the specified
+    * paramaters in the database.
+    * @param csid chatsession id
+    * @param alias  alias
+    * @param isGroup  is the chat a group chat
+    * @param chatState  the current state
+    * @return created chatsession
+    */
   def create(csid: Long, alias: String, isGroup: Boolean,
              chatState: ChatState.ChatState): ChatSession = {
     DbSchema.insert(new ChatSession(0, csid, alias, isGroup, chatState.id))
   }
 
   /**
-    * Returns the set of chat session:
+    * Returns the set of chatsessions:
     * @param ids - for the specified id, if Some provided,
     *            for all existing if None.
     * @return - mutable set of chat sessions.
     */
-  def getAll(ids: Option[List[Long]]) = {
+  def getAll(ids: Option[List[Long]]): List[ChatSession] = {
     DbSchema.getAll[ChatSession](ids)
   }
 
-  def getByChatId(csid: Long) = {
+  def getByChatId(csid: Long): Option[ChatSession] = {
     DbSchema.getChatSessionByChatId(csid)
   }
 
@@ -122,7 +165,7 @@ object ChatSession {
     DbSchema.getMembers(csid)
   }
 
-  def update(cs: ChatSession) = {
+  def update(cs: ChatSession): Unit = {
     DbSchema.update[ChatSession](cs)
   }
 
@@ -130,7 +173,17 @@ object ChatSession {
     DbSchema.getChatSessionByChatId(csid).isDefined
   }
 
-  def hasIntersections(csid: Long, beginDate: Date, endDate: Date) = {
+  /**
+    * Checks either the event specified by the beginDate and
+    * endDate intersects with any other event owned by chatsession
+    * specified by csid.
+    * @param csid
+    * @param beginDate
+    * @param endDate
+    * @return the list of intersected events
+    */
+  def hasIntersections(csid: Long, beginDate: Date,
+                       endDate: Date): List[Event] = {
     val begin = new Timestamp(beginDate.getTime)
     val end = new Timestamp(endDate.getTime)
     DbSchema.getEventsWithLimits(csid, begin, end)

@@ -12,7 +12,8 @@ import info.mukel.telegrambot4s.models._
 import scala.concurrent.ExecutionContext
 
 /**
-  * Appointing an event in step-by-step mode using telegram inline buttons as user interface.
+  * Appointing an event in step-by-step mode using
+  * telegram inline buttons as user interface.
   */
 object KeepInMindGui extends LazyLogging {
 
@@ -32,8 +33,8 @@ object KeepInMindGui extends LazyLogging {
   )
 
   /**
-    * Handler for /keepinmind command when there are no additional parameters are passed with the comand.
-    *
+    * Handler for /keepinmind command when there are no
+    * additional parameters are passed with the comand.
     * @param bot Bot for sending a reply
     * @param msg Message received
     */
@@ -51,9 +52,9 @@ object KeepInMindGui extends LazyLogging {
   }
 
   /**
-    * Handler for regular text message. Depending on current state process message by
+    * Handler for regular text message.
+    * Depending on current state process message by
     * certain message handler.
-    *
     * @param bot Bot for sending a reply
     * @param msg Message received
     * @param ec Thread pool in which bot operates
@@ -83,7 +84,6 @@ object KeepInMindGui extends LazyLogging {
 
   /**
     * Handler for message containing event name.
-    *
     * @param bot Bot for sending a reply
     * @param chatSession Chat session with the current user
     * @param msg Message received
@@ -125,14 +125,14 @@ object KeepInMindGui extends LazyLogging {
   }
 
   /**
-    * Prefix (tag) for inline button callback used for handling pressing specific day in calendar widget.
+    * Prefix (tag) for inline button callback used for handling
+    * pressing specific day in calendar widget.
     */
   val CALENDAR_DAY_TAG = "calendar-day-"
   def calendarDayTag(s: String): String = CALENDAR_DAY_TAG + s
 
   /**
     * Create calendar widget for specific year and month.
-    *
     * @param year Year to show in calendar
     * @param month Month to show in calendar
     */
@@ -205,7 +205,6 @@ object KeepInMindGui extends LazyLogging {
 
   /**
     * Dummy handler for disabled buttons.
-    *
     * @param bot Bot for sending a reply
     * @param cbq Inline button callback query
     */
@@ -216,7 +215,6 @@ object KeepInMindGui extends LazyLogging {
 
   /**
     * Handler for two buttons: previous and next month.
-    *
     * @param bot Bot for sending a reply
     * @param cbq Inline button callback query
     */
@@ -268,7 +266,6 @@ object KeepInMindGui extends LazyLogging {
 
   /**
     * Handler for pressing a button in calendar widget.
-    *
     * @param bot Bot for sending a reply
     * @param cbq Inline button callback query
     * @param ec Thread pool in which bot operates
@@ -301,7 +298,6 @@ object KeepInMindGui extends LazyLogging {
 
   /**
     * Handler for message containing event date.
-    *
     * @param bot Bot for sending a reply
     * @param chatSession Chat session with the current user
     * @param msg Message received
@@ -309,8 +305,7 @@ object KeepInMindGui extends LazyLogging {
     */
   def onMessageEventDate(bot: SierraBot, chatSession: ChatSession)
                         (implicit msg: Message, ec: ExecutionContext): Unit = {
-
-    // TODO: here should be preprocessing logic from KeepInMind
+    // TODO: here could be preprocessing logic from /keepinmind
     val text = msg.text.get.split('.')
     chatSession.inputEventDay = Some(text(0).toInt)
     chatSession.inputEventMonth = Some(text(1).toInt)
@@ -324,7 +319,6 @@ object KeepInMindGui extends LazyLogging {
 
   /**
     * Proceed to the step of selecting time.
-    *
     * @param bot Bot for sending a reply
     * @param chatSession Chat session with the current user
     * @param msg Message received
@@ -394,9 +388,7 @@ object KeepInMindGui extends LazyLogging {
 
   /**
     * Handler for pressing a button with selected time.
-    *
     * @param bot Bot for sending a reply
-    * @param msg Message received
     * @param ec Thread pool in which bot operates
     */
   def onCallbackWithTagTimepicker(bot: SierraBot)
@@ -429,7 +421,6 @@ object KeepInMindGui extends LazyLogging {
 
   /**
     * Handler for message containing event time.
-    *
     * @param bot Bot for sending a reply
     * @param chatSession Chat session with the current user
     * @param msg Message received
@@ -437,8 +428,7 @@ object KeepInMindGui extends LazyLogging {
     */
   def onMessageEventTime(bot: SierraBot, chatSession: ChatSession)
                         (implicit msg: Message, ec: ExecutionContext): Unit = {
-
-    // TODO: here should be preprocessing logic from KeepInMind
+    // TODO: here could be preprocessing logic from /keepinmind
     val text = msg.text.get.split(':')
     chatSession.inputEventHour = Some(text(0).toInt)
     chatSession.inputEventMinutes = Some(text(1).toInt)
@@ -450,7 +440,6 @@ object KeepInMindGui extends LazyLogging {
 
   /**
     * Proceed to the step of selecting duration.
-    *
     * @param bot Bot for sending a reply
     * @param chatSession Chat session with the current user
     * @param msg Message received
@@ -515,9 +504,7 @@ object KeepInMindGui extends LazyLogging {
 
   /**
     * Handler for pressing a button with selected duration.
-    *
     * @param bot Bot for sending a reply
-    * @param msg Message received
     * @param ec Thread pool in which bot operates
     */
   def onCallbackWithTagDuration(bot: SierraBot)
@@ -558,7 +545,6 @@ object KeepInMindGui extends LazyLogging {
 
   /**
     * Handler for message containing event duration.
-    *
     * @param bot Bot for sending a reply
     * @param chatSession Chat session with the current user
     * @param msg Message received
@@ -566,7 +552,6 @@ object KeepInMindGui extends LazyLogging {
     */
   def onMessageEventDuration(bot: SierraBot, chatSession: ChatSession)
                             (implicit msg: Message, ec: ExecutionContext): Unit = {
-    // TODO: here should be preprocessing logic from /keepinmind
     chatSession.inputEventDurationInMinutes = Some(msg.text.get.toInt)
     chatSession.save()
 
@@ -576,7 +561,6 @@ object KeepInMindGui extends LazyLogging {
 
   /**
     * Create timepicker widget.
-    *
     * @param bot Bot for sending a reply
     * @param chatSession Chat session with the current user
     * @param msg Message received

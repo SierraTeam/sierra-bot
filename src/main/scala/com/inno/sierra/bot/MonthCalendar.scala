@@ -9,7 +9,6 @@ import scala.collection.mutable
 /**
   * Code is based on
   * https://rosettacode.org/wiki/Calendar#Scala_Version_2
-  *
   * @param monthInYear
   * @param year
   */

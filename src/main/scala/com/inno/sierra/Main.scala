@@ -9,7 +9,6 @@ import com.typesafe.config.ConfigFactory
 object Main {
 
   def main(args: Array[String]) {
-    // TODO: delete before production
     DbSchema.init()
 
     // Mode is polling or webhook

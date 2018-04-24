@@ -13,7 +13,9 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-
+/**
+  * The controller for the bot.
+  */
 abstract class SierraBot extends TelegramBot with Commands with Callbacks {
   lazy val token: String = ConfigFactory.load().getString("bot.token")
 
