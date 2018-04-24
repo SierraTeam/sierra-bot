@@ -91,6 +91,7 @@ abstract class SierraBot extends TelegramBot with Commands with Callbacks {
     super.run()
     val ns = new NotifierService()(
       ExecutionContext.fromExecutor(Executors.newCachedThreadPool()))
+    //create the actor with reference to this bot
     val notificationSendingActor =
       actorSystem.actorOf(Props(classOf[NotificationActor], this), "notificationSendingActor")
     val timeframe = (10 seconds) //each x seconds bot will lookup for new events and send them

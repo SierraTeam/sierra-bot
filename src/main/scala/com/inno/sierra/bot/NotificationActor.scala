@@ -4,6 +4,10 @@ import akka.actor.Actor
 import com.inno.sierra.model.{ChatSession, DbSchema, Event}
 import com.typesafe.scalalogging.LazyLogging
 
+/**
+  * Actor should receive com.inno.sierra.model.Event and will notify user about it.
+  * @param bot Bot that will send notifications
+  */
 class NotificationActor(bot: SierraBot) extends Actor with LazyLogging {
 
   private def sendNotification(event: Event): Unit = {
@@ -26,6 +30,7 @@ class NotificationActor(bot: SierraBot) extends Actor with LazyLogging {
 
     bot.sendMessage(chatSession.csid, notification)
 
+    //mark event as notified in DB to avoid sending notifications more than once
     event.isNotified = true
     DbSchema.update(event)
   }
