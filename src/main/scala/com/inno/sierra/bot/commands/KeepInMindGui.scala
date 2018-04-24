@@ -11,7 +11,14 @@ import info.mukel.telegrambot4s.models._
 
 import scala.concurrent.ExecutionContext
 
+/**
+  * Appointing an event in step-by-step mode using telegram inline buttons as user interface.
+  */
 object KeepInMindGui extends LazyLogging {
+
+  /**
+    * Configuration for duration picker widget.
+    */
   val DURATIONS = List(
     5 -> "5 min",
     10 -> "10 min",
@@ -24,23 +31,39 @@ object KeepInMindGui extends LazyLogging {
     180 -> "3.0 hours"
   )
 
+  /**
+    * Handler for /keepinmind command when there are no additional parameters are passed with the comand.
+    *
+    * @param bot Bot for sending a reply
+    * @param msg Message received
+    */
   def execute(bot: SierraBot)(implicit msg: Message): Unit = {
     Start.execute(msg)
 
+    // Change state to the first step - entering the name for an event
     val chatSession = ChatSession.getByChatId(msg.chat.id).get
     chatSession.chatState = ChatState.CreatingEventInputtingName
     chatSession.resetInputs()
     chatSession.save()
 
-    bot.reply(MessagesText.KEEPINMIND2_EVENT_NAME)
+    // Show a prompting message
+    bot.reply(MessagesText.KEEPINMINDGUI_EVENT_NAME)
   }
 
+  /**
+    * Handler for regular text message. Depending on current state process message by
+    * certain message handler.
+    *
+    * @param bot Bot for sending a reply
+    * @param msg Message received
+    * @param ec Thread pool in which bot operates
+    */
   def onMessage(bot: SierraBot)(implicit msg: Message, ec: ExecutionContext): Unit = {
     for {
       chatSession <- ChatSession.getByChatId(msg.chat.id)
       _ <- msg.text
       command <- Extractors.textTokens(msg).map(_.head)
-      if !command.toString.equals("/keepinmind")
+      if command != "/keepinmind"
     } /* do */ {
       chatSession.chatState match {
         case ChatState.CreatingEventInputtingName =>
@@ -52,32 +75,48 @@ object KeepInMindGui extends LazyLogging {
         case ChatState.CreatingEventInputtingDuration =>
           onMessageEventDuration(bot, chatSession)
         case _ =>
-          logger.debug("not applicable to keepinmind2")
+          logger.debug("not applicable to keepinmindgui")
           Unit // do nothing
       }
     }
   }
 
+  /**
+    * Handler for message containing event name.
+    *
+    * @param bot Bot for sending a reply
+    * @param chatSession Chat session with the current user
+    * @param msg Message received
+    * @param ec Thread pool in which bot operates
+    */
   def onMessageEventName(bot: SierraBot, chatSession: ChatSession)
                         (implicit msg: Message, ec: ExecutionContext): Unit = {
+
+    // Event name will be stored in ChatSession temporarly until step-by-step process is completed.
     chatSession.inputEventName = msg.text
+
+    // Use current date as default value for the event
     val now = new GregorianCalendar
     val year = now.get(Calendar.YEAR)
     val month = now.get(Calendar.MONTH) + 1
     val dayOfMonth = now.get(Calendar.DAY_OF_MONTH)
-
     chatSession.inputEventYear = Some(year)
     chatSession.inputEventMonth = Some(month)
     chatSession.inputEventDay = Some(dayOfMonth)
+
+    // Change state to the second step - entering the date for the event
     chatSession.chatState = ChatState.CreatingEventInputtingDate
     chatSession.save()
 
+    // Create calendar widget
     val calendar = createCalendar(year, month)
 
+    // Send a reply and wait until it is sent
     bot.reply(
-      MessagesText.KEEPINMIND2_EVENT_DATE,
+      MessagesText.KEEPINMINDGUI_EVENT_DATE,
       replyMarkup = Some(calendar)
     ).map { msg =>
+      // Then save calendar widget message ID so we can remove the widget later
       chatSession.inputCalendarMessageId = Some(msg.messageId)
       chatSession.save()
       msg
@@ -85,27 +124,41 @@ object KeepInMindGui extends LazyLogging {
 
   }
 
+  /**
+    * Prefix (tag) for inline button callback used for handling pressing specific day in calendar widget.
+    */
   val CALENDAR_DAY_TAG = "calendar-day-"
   def calendarDayTag(s: String): String = CALENDAR_DAY_TAG + s
 
+  /**
+    * Create calendar widget for specific year and month.
+    *
+    * @param year Year to show in calendar
+    * @param month Month to show in calendar
+    */
   // scalastyle:off method.length
-  def createCalendar(year: Int, month: Int): InlineKeyboardMarkup = {
+  private def createCalendar(year: Int, month: Int): InlineKeyboardMarkup = {
     val daysInWeek = Calendar.SATURDAY
     val daysInCalendarMax = 42
     val calendar: MonthCalendar = MonthCalendar(month, year)
 
+    // Top header shows current month and year
     val header = Seq(
       InlineKeyboardButton.callbackData(
         s"${calendar.monthName} $year",
         "ignore"
       )
     )
+
+    // Second header shows days of week
     val daysOfWeek = List("M", "T", "W", "R", "F", "S", "U").map { dayOfWeek =>
       InlineKeyboardButton.callbackData(
         dayOfWeek,
         "ignore"
       )
     }
+
+    // Prepare data about days in the selected month
     val daySlotsInMonth: Seq[String] = Seq().padTo(calendar.dayOfWeek, "  ") ++
       calendar.daysInMonth.map(_.toString)
     val daySlotsInMonthPadded: Seq[String] = daySlotsInMonth match {
@@ -114,6 +167,7 @@ object KeepInMindGui extends LazyLogging {
       case _ => daySlotsInMonth.padTo(daysInCalendarMax - 7, " ")
     }
 
+    // Body shows day of the selected month
     val body = daySlotsInMonthPadded.grouped(daysInWeek).map { weekSlots =>
       weekSlots.map { dayOfMonth =>
         InlineKeyboardButton.callbackData(
@@ -125,12 +179,15 @@ object KeepInMindGui extends LazyLogging {
         )
       }
     }.toSeq
+
+    // Footer shows controls for navigating to previous or next month
     val footer = Seq(
       InlineKeyboardButton.callbackData("<", "month-previous"),
       InlineKeyboardButton.callbackData(" ", "ignore"),
       InlineKeyboardButton.callbackData(">", "month-next")
     )
 
+    // Consolidate all parts into single widget
     InlineKeyboardMarkup(
       Seq(
         header,
@@ -146,11 +203,23 @@ object KeepInMindGui extends LazyLogging {
   }
   // scalastyle:on method.length
 
+  /**
+    * Dummy handler for disabled buttons.
+    *
+    * @param bot Bot for sending a reply
+    * @param cbq Inline button callback query
+    */
   def onCallbackWithTagIgnore(bot: SierraBot)
                              (implicit cbq: CallbackQuery): Unit = {
     bot.ackCallback()
   }
 
+  /**
+    * Handler for two buttons: previous and next month.
+    *
+    * @param bot Bot for sending a reply
+    * @param cbq Inline button callback query
+    */
   def onCallbackWithTagMonth(bot: SierraBot)
                             (implicit cbq: CallbackQuery): Unit = {
     // Notification only shown to the user who pressed the button.
@@ -347,7 +416,7 @@ object KeepInMindGui extends LazyLogging {
       bot.request(
         SendMessage(
           ChatId(msg.source),
-          MessagesText.KEEPINMIND2_EVENT_TIME,
+          MessagesText.KEEPINMINDGUI_EVENT_TIME,
           replyMarkup = Some(durationpicker)
         )
       )

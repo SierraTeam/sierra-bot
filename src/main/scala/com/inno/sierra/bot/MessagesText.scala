@@ -69,18 +69,18 @@ object MessagesText {
   val KEEPINMIND_WRONG_FORMAT_PARAM4: String =
     "The duration, fourth parameter, should be a number"
 
-  val KEEPINMIND2_EVENT_NAME: String =
+  val KEEPINMINDGUI_EVENT_NAME: String =
     "Alright, a new event. How are we going to call it? " +
       "Please choose a name for an event."
 
-  val KEEPINMIND2_EVENT_DATE: String =
+  val KEEPINMINDGUI_EVENT_DATE: String =
     "Good. Now let's choose a date for your event. " +
       "Use the calendar widget to enter the planned date."
 
-  val KEEPINMIND2_EVENT_TIME: String =
+  val KEEPINMINDGUI_EVENT_TIME: String =
     "Please choose the time for the event"
 
-  val KEEPINMIND2_EVENT_DURATION: String =
+  val KEEPINMINDGUI_EVENT_DURATION: String =
     ""
 
   val CANCEL_MISSING_PARAM: String =
