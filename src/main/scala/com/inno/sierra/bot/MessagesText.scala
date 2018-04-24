@@ -15,6 +15,10 @@ object MessagesText {
       |/myevents:  Displays list of all events scheduled for you.
       |/cancelevent:  Cancels the event. Id of event can be passed as a parameter.
       |/info:  Displays description (this text).
+      |/subscribe: Subscribes to the group events.
+      |/unsubscribe: Unsubscribes from the group events.
+      |/suggesttime: Suggests the time suitable for all the subscribed users for the specified day.
+      |Example: 24.04.2018
       """.stripMargin
 
   val START_FIRST_TIME: String =
