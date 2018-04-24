@@ -111,7 +111,7 @@ object KeepInMindGui extends LazyLogging {
     // Create calendar widget
     val calendar = createCalendar(year, month)
 
-    // Send a reply and wait until it is sent
+    // Send a reply with timepicker widget and wait until it is sent
     bot.reply(
       MessagesText.KEEPINMINDGUI_EVENT_DATE,
       replyMarkup = Some(calendar)
@@ -231,9 +231,11 @@ object KeepInMindGui extends LazyLogging {
       data <- cbq.data
     } /* do */ {
 
+      // Get previously selected year and month
       val year = chatSession.inputEventYear.get
       val month = chatSession.inputEventMonth.get
 
+      // Move to next or previous month
       val (yearNew: Int, monthNew: Int) = data match {
         case "next" =>
           month + 1 match {
@@ -247,12 +249,15 @@ object KeepInMindGui extends LazyLogging {
           }
       }
 
+      // Save newly selected year and month
       chatSession.inputEventYear = Some(yearNew)
       chatSession.inputEventMonth = Some(monthNew)
       chatSession.save()
 
+      // Create calendar widget for newly selected year and month
       val calendarMarkup = createCalendar(yearNew, monthNew)
 
+      // Send a reply and wait until it is sent
       bot.request(
         EditMessageReplyMarkup(
           Some(ChatId(msg.source)), // msg.chat.id
@@ -261,6 +266,13 @@ object KeepInMindGui extends LazyLogging {
     }
   }
 
+  /**
+    * Handler for pressing a button in calendar widget.
+    *
+    * @param bot Bot for sending a reply
+    * @param cbq Inline button callback query
+    * @param ec Thread pool in which bot operates
+    */
   // scalastyle:off method.length
   def onCallbackWithTagCalendarDay
     (bot: SierraBot)
@@ -275,21 +287,11 @@ object KeepInMindGui extends LazyLogging {
       Extractors.Int(dayOfMonth) = data
     } /* do */ {
 
-      chatSession.inputEventYear = Some(chatSession.inputEventYear match {
-        case Some(year) => year
-        case None =>
-          val calendar = Calendar.getInstance
-          calendar.get(Calendar.YEAR)
-      })
-      chatSession.inputEventMonth = Some(chatSession.inputEventMonth match {
-        case Some(month) => month
-        case None =>
-          val calendar = Calendar.getInstance
-          calendar.get(Calendar.MONTH)
-      })
+      // Save selected day of month
       chatSession.inputEventDay = Some(dayOfMonth)
       chatSession.save()
 
+      // Proceed to the next step - entering the time for the event
       implicit val message: Message = msg
       proceedToTimepicker(bot, chatSession)
 
@@ -297,27 +299,50 @@ object KeepInMindGui extends LazyLogging {
   }
   // scalastyle:on method.length
 
+  /**
+    * Handler for message containing event date.
+    *
+    * @param bot Bot for sending a reply
+    * @param chatSession Chat session with the current user
+    * @param msg Message received
+    * @param ec Thread pool in which bot operates
+    */
   def onMessageEventDate(bot: SierraBot, chatSession: ChatSession)
                         (implicit msg: Message, ec: ExecutionContext): Unit = {
-    // TODO: here should be preprocessing logic from /keepinmind
+
+    // TODO: here should be preprocessing logic from KeepInMind
     val text = msg.text.get.split('.')
     chatSession.inputEventDay = Some(text(0).toInt)
     chatSession.inputEventMonth = Some(text(1).toInt)
     chatSession.inputEventYear = Some(text(2).toInt)
     chatSession.save()
 
+    // Proceed to the next step - entering the time for the event
     proceedToTimepicker(bot, chatSession)
+
   }
 
-  def proceedToTimepicker(bot: SierraBot, chatSession: ChatSession)
+  /**
+    * Proceed to the step of selecting time.
+    *
+    * @param bot Bot for sending a reply
+    * @param chatSession Chat session with the current user
+    * @param msg Message received
+    * @param ec Thread pool in which bot operates
+    */
+  private def proceedToTimepicker(bot: SierraBot, chatSession: ChatSession)
                          (implicit msg: Message, ec: ExecutionContext): Unit = {
+
+    // Prevent showing timepicker widget more than once
     if (chatSession.chatState != ChatState.CreatingEventInputtingDate) {
       return
     }
 
+    // Change state to the second step - entering the time for the event
     chatSession.chatState = ChatState.CreatingEventInputtingTime
     chatSession.save()
 
+    // Show that entered date was accepted and wait until this message is sent
     bot.request(
       SendMessage(
         ChatId(msg.source),
@@ -325,8 +350,10 @@ object KeepInMindGui extends LazyLogging {
       )
     ).flatMap { msg =>
 
+      // Create timepicker widget
       val timepicker = createTimepicker()
 
+      // Send a reply with timepicker widget and wait until it is sent
       bot.request(
         SendMessage(
           ChatId(msg.source),
@@ -336,6 +363,8 @@ object KeepInMindGui extends LazyLogging {
       )
 
     }.map { msg =>
+
+      // Then save timepicker widget message ID so we can remove the widget later
       chatSession.inputTimepickerMessageId = Some(msg.messageId)
       chatSession.save()
       msg
@@ -343,8 +372,12 @@ object KeepInMindGui extends LazyLogging {
 
   }
 
+  /**
+    * Create timepicker widget.
+    */
+  private def createTimepicker(): InlineKeyboardMarkup = {
 
-  def createTimepicker(): InlineKeyboardMarkup = {
+    // Grid for each half an hour in a day.
     // scalastyle:off magic.number
     val timepickerButtons = (0 to 23 flatMap { hh: Int =>
       List(0, 30) map { mm: Int =>
@@ -359,6 +392,13 @@ object KeepInMindGui extends LazyLogging {
     InlineKeyboardMarkup(timepickerButtons)
   }
 
+  /**
+    * Handler for pressing a button with selected time.
+    *
+    * @param bot Bot for sending a reply
+    * @param msg Message received
+    * @param ec Thread pool in which bot operates
+    */
   def onCallbackWithTagTimepicker(bot: SierraBot)
                                  (implicit cbq: CallbackQuery, ec: ExecutionContext): Unit = {
     // Notification only shown to the user who pressed the button.
@@ -370,40 +410,63 @@ object KeepInMindGui extends LazyLogging {
       data <- cbq.data
     } /* do */ {
 
+      // Data has format of "$hh-$mm"
       val time = data.split('-').map(_.toInt)
       val hour = time(0)
       val minutes = time(1)
 
+      // Save selected time for an event
       chatSession.inputEventHour = Some(hour)
       chatSession.inputEventMinutes = Some(minutes)
       chatSession.save()
 
+      // Proceed to the next step - entering the duration for the event
       implicit val message: Message = msg
       proceedToDurationpicker(bot, chatSession)
 
     }
   }
 
+  /**
+    * Handler for message containing event time.
+    *
+    * @param bot Bot for sending a reply
+    * @param chatSession Chat session with the current user
+    * @param msg Message received
+    * @param ec Thread pool in which bot operates
+    */
   def onMessageEventTime(bot: SierraBot, chatSession: ChatSession)
                         (implicit msg: Message, ec: ExecutionContext): Unit = {
-    // TODO: here should be preprocessing logic from /keepinmind
+
+    // TODO: here should be preprocessing logic from KeepInMind
     val text = msg.text.get.split(':')
     chatSession.inputEventHour = Some(text(0).toInt)
     chatSession.inputEventMinutes = Some(text(1).toInt)
     chatSession.save()
 
+    // Proceed to the next step - entering the duration for the event
     proceedToDurationpicker(bot, chatSession)
   }
 
-  def proceedToDurationpicker(bot: SierraBot, chatSession: ChatSession)
+  /**
+    * Proceed to the step of selecting duration.
+    *
+    * @param bot Bot for sending a reply
+    * @param chatSession Chat session with the current user
+    * @param msg Message received
+    * @param ec Thread pool in which bot operates
+    */
+  private def proceedToDurationpicker(bot: SierraBot, chatSession: ChatSession)
                              (implicit msg: Message, ec: ExecutionContext): Unit = {
     if (chatSession.chatState != ChatState.CreatingEventInputtingTime) {
       return
     }
 
+    // Change state to the second step - entering the duration for the event
     chatSession.chatState = ChatState.CreatingEventInputtingDuration
     chatSession.save()
 
+    // Show that entered time was accepted and wait until this message is sent
     bot.request(
       SendMessage(
         ChatId(msg.source),
@@ -411,8 +474,10 @@ object KeepInMindGui extends LazyLogging {
       )
     ).flatMap { msg =>
 
+      // Create duration picker widget
       val durationpicker = createDurationpicker()
 
+      // Send a reply with durationpicker widget and wait until it is sent
       bot.request(
         SendMessage(
           ChatId(msg.source),
@@ -422,6 +487,7 @@ object KeepInMindGui extends LazyLogging {
       )
 
     }.map { msg =>
+      // Then save duration widget message ID so we can remove the widget later
       chatSession.inputDurationpickerMessageId = Some(msg.messageId)
       chatSession.save()
       msg
@@ -429,7 +495,12 @@ object KeepInMindGui extends LazyLogging {
 
   }
 
-  def createDurationpicker(): InlineKeyboardMarkup = {
+  /**
+    * Create duration picker widget.
+    */
+  private def createDurationpicker(): InlineKeyboardMarkup = {
+
+    // Take durations from constant defined above
     // scalastyle:off magic.number
     val durationpickerButtons = DURATIONS.map { duration =>
       InlineKeyboardButton.callbackData(
@@ -442,6 +513,13 @@ object KeepInMindGui extends LazyLogging {
     InlineKeyboardMarkup(durationpickerButtons)
   }
 
+  /**
+    * Handler for pressing a button with selected duration.
+    *
+    * @param bot Bot for sending a reply
+    * @param msg Message received
+    * @param ec Thread pool in which bot operates
+    */
   def onCallbackWithTagDuration(bot: SierraBot)
                                (implicit cbq: CallbackQuery, ec: ExecutionContext): Unit = {
     // Notification only shown to the user who pressed the button.
@@ -454,9 +532,11 @@ object KeepInMindGui extends LazyLogging {
       Extractors.Int(durationInMinutes) = data
     } /* do */ {
 
+      // Map selected duration from string back to integer representing duration in minutes
       for {
         durationInMinutesTuple <- DURATIONS.find(_._1 == durationInMinutes)
       } /* do */ {
+        // Show that entered duration was accepted
         bot.request(
           SendMessage(
             ChatId(msg.source),
@@ -465,27 +545,48 @@ object KeepInMindGui extends LazyLogging {
         )
       }
 
+      // Save selected duration
       chatSession.inputEventDurationInMinutes = Some(durationInMinutes)
       chatSession.save()
 
+      // Proceed to final step of this step-by-step process
       implicit val message: Message = msg
       createEvent(bot, chatSession)
 
     }
   }
 
+  /**
+    * Handler for message containing event duration.
+    *
+    * @param bot Bot for sending a reply
+    * @param chatSession Chat session with the current user
+    * @param msg Message received
+    * @param ec Thread pool in which bot operates
+    */
   def onMessageEventDuration(bot: SierraBot, chatSession: ChatSession)
                             (implicit msg: Message, ec: ExecutionContext): Unit = {
     // TODO: here should be preprocessing logic from /keepinmind
     chatSession.inputEventDurationInMinutes = Some(msg.text.get.toInt)
     chatSession.save()
 
+    // Proceed to final step of this step-by-step process
     createEvent(bot, chatSession)
   }
 
+  /**
+    * Create timepicker widget.
+    *
+    * @param bot Bot for sending a reply
+    * @param chatSession Chat session with the current user
+    * @param msg Message received
+    * @param ec Thread pool in which bot operates
+    */
   // scalastyle:off method.length
   def createEvent(bot: SierraBot, chatSession: ChatSession)
                  (implicit msg: Message, ec: ExecutionContext): Unit = {
+
+    // Begin datetime of the event
     val calendar = Calendar.getInstance
     calendar.set(
       chatSession.inputEventYear.get,
@@ -496,17 +597,23 @@ object KeepInMindGui extends LazyLogging {
     )
     val beginDate: Date = calendar.getTime
 
+    // End datetime of the event
     val ONE_MINUTE_IN_MILLIS = 60000
     val duration = chatSession.inputEventDurationInMinutes.get * ONE_MINUTE_IN_MILLIS
     val endDate = new Date(beginDate.getTime + duration)
 
+    // Check intersection with another events
     val intersectedEvents = ChatSession.hasIntersections(
       msg.chat.id, beginDate, endDate)
     logger.debug(intersectedEvents.toString)
 
+    // Depending on has intersection or not
     val answer = if (intersectedEvents.isEmpty) {
+
+      // If no intersection store the event in database
       val event = Event.create(msg.chat.id, beginDate, chatSession.inputEventName.get, endDate)
 
+      // Delete calendar widget to unclutter chat
       for {
         inputCalendarMessageId <- chatSession.inputCalendarMessageId
       } /* do */ {
@@ -518,6 +625,7 @@ object KeepInMindGui extends LazyLogging {
         )
       }
 
+      // Delete timepicker widget to unclutter chat
       for {
         inputTimepickerMessageId <- chatSession.inputTimepickerMessageId
       } /* do */ {
@@ -529,6 +637,7 @@ object KeepInMindGui extends LazyLogging {
         )
       }
 
+      // Delete durationpicker widget to unclutter chat
       for {
         inputDurationpickerMessageId <- chatSession.inputDurationpickerMessageId
       } /* do */ {
@@ -540,18 +649,25 @@ object KeepInMindGui extends LazyLogging {
         )
       }
 
+      // Reset parameters related to KeepInMindGui
       chatSession.chatState = ChatState.Started
       chatSession.resetInputs()
       chatSession.save()
 
+      // Show that event was successfully created
       MessagesText.KEEPINMIND_DONE.format(event)
+
     } else {
+
+      // Show error message that event has intersection with another events
       val stringBuilder = new StringBuilder(
         MessagesText.KEEPINMIND_INTERSECTIONS)
       intersectedEvents.foreach(stringBuilder.append(_).append("\n"))
       stringBuilder.toString()
+
     }
 
+    // Send the answer
     bot.request(
       SendMessage(
         ChatId(msg.source),
@@ -561,4 +677,5 @@ object KeepInMindGui extends LazyLogging {
 
   }
   // scalastyle:on method.length
+
 }
