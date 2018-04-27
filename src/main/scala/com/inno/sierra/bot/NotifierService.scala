@@ -1,9 +1,11 @@
 package com.inno.sierra.bot
 
-import java.util.Date
+import java.sql.Timestamp
+import java.util.{Calendar, Date}
 
 import akka.actor.ActorRef
 import com.inno.sierra.model.DbSchema
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -19,6 +21,12 @@ class NotifierService ()(implicit ec: ExecutionContext) extends LazyLogging {
     */
   def sendMessages(sender: ActorRef, timeframe: FiniteDuration): Future[Unit] = Future  {
     val tillDate = new Date(new Date().getTime + timeframe.toMillis)
+    val c = Calendar.getInstance()
+    c.setTimeInMillis(tillDate.getTime)
+    c.set(Calendar.HOUR_OF_DAY, tillDate.getHours +
+      ConfigFactory.load().getInt("time.coeficient"))
+
+    val beginDate = new Timestamp(c.getTimeInMillis)
     val events = DbSchema.getAllEventsTillDate(tillDate)
 
     logger.debug("events analyzed till " + tillDate + ": " + events)
