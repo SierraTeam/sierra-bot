@@ -1,5 +1,7 @@
 package com.inno.sierra.bot.commands
 
+import java.util.Calendar
+
 import com.inno.sierra.bot.{MessagesText, Utils}
 import com.inno.sierra.model.{ChatSession, ChatState, Event}
 import com.typesafe.scalalogging.LazyLogging
@@ -10,7 +12,7 @@ import scala.collection.mutable.ListBuffer
 
 /**
   * Suggests time, when the events can be conducted.
-  * In groups - will show the available time for all the
+  * In groups - will show the available time slots for all the
   * subscribed users in the group.
   * In private chats - will show the available time for the user.
   */
@@ -23,19 +25,25 @@ object SuggestTime extends LazyLogging {
     */
   def execute(msg: Message): String = {
     val args = Extractors.commandArguments(msg).get
-    if (args.isEmpty) return MessagesText.SUGGESTTIME_NOT_ENOUGH_PARAMS
+    val day =
+      if (args.isEmpty) {
+        Utils.simpleDateTimeFormat
+          .parse(Utils.simpleDateTimeFormat.format(Calendar.getInstance().getTime))
+      } else {
+        Utils.simpleDateFormat.parse(args.head)
+      }
 
     val user = msg.from.get
     val chat = msg.chat
-    val day = Utils.simpleDateFormat.parse(args.head)
 
     Start.execute(msg)
 
-    val chatSessions =
+    val curChatSession = ChatSession.getByChatId(chat.id).get
+    val chatSessions: List[ChatSession] =
       if (chat.`type`.equals(ChatType.Private)) {
-        List[ChatSession](ChatSession.getByChatId(chat.id).get)
+        List[ChatSession](curChatSession)
       } else {
-        ChatSession.getMembersOfGroup(chat.id) // TODO: add the chat itself
+        curChatSession :: ChatSession.getMembersOfGroup(chat.id)
       }
 
     logger.debug(chatSessions.toString)
@@ -49,9 +57,12 @@ object SuggestTime extends LazyLogging {
     if (events.isEmpty) {
       MessagesText.SUGGESTTIME_DAY_FREE
     } else {
+      val slots = Event.countFreeTimeSlots(events.toList, day)
       val sb = new StringBuffer(MessagesText.SUGGESTTIME_DONE)
-      events.foreach(e => sb.append(e.beginDate + " - " + e.endDate + ", ")) // TODO: remove comma
-      sb.toString
+      slots.foreach(s => sb.append(s.beginDate.toLocalDateTime.format(Utils.datePattern) +
+        " - " + s.endDate.toLocalDateTime.format(Utils.datePattern) + "\n"))
+      val result = sb.toString
+      result.substring(0, result.length - 1)
     }
   }
 }

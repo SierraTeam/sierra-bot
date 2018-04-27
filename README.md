@@ -32,9 +32,8 @@ In order to participate in group events (be accounted when the event is
 been created and been notified), you need to /subscribe in the group. Later, if you changed 
 your mind, you can /unsubscribe.
 
-(PARTIALLY IMPLEMENTED - shows only the list of planned events for all the subscribed users) 
 In order to facilitate the process of finding the suitable time for everybody, you can use 
-/suggesttime command with the date provided. Example: /suggesttime 24.04.2018.
+/suggesttime command with the date provided (without the date it will show the result for the current day). Example: /suggesttime 24.04.2018.
 
 (PROTOTYPE - branch "feature/google-calendar", bot does not remember the token yet) You can authorize your Google Calendar account with the bot, so that it could
 check your schedule in Google Calendar as well in order to find suitable time for you. 
@@ -63,7 +62,7 @@ Reference configuration file is used for deployment at Heroku.
 /src/main/resources/reference.conf
 ```
 
-To run the bot use sbt:
+To run the bot use sbt (you need to be outside Russia for bot to work):
 ```sh
 $ cd sierra-bot
 $ sbt

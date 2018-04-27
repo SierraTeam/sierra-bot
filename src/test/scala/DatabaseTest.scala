@@ -1,6 +1,4 @@
-
 import java.util.Date
-
 import com.inno.sierra.model.{ChatSession, ChatState, DbSchema, Event}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}

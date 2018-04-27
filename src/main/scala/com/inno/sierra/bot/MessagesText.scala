@@ -93,7 +93,7 @@ object MessagesText {
     "Please specify number of event you want to cancel"
 
   val SUGGESTTIME_DONE: String =
-    "You can use any time slots beyond the following busy ones: \n"
+    "Those time slots are available: \n"
 
   val SUGGESTTIME_NOT_ENOUGH_PARAMS: String =
     "Please provide the day, for which you need a recommendation :)"
@@ -111,7 +111,7 @@ object MessagesText {
     "There is no upcoming events recorded for you."
 
   val EVENT_ALREADY_PASS: String =
-    "The event must be in the future, to be schedule."
+    "The event must be in the future, to be scheduled."
 
   val CANCEL_DONE: String =
     "Event was canceled"
