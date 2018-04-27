@@ -21,16 +21,14 @@ class NotifierService ()(implicit ec: ExecutionContext) extends LazyLogging {
     */
   def sendMessages(sender: ActorRef, timeframe: FiniteDuration): Future[Unit] = Future  {
     val today = new Date(new Date().getTime + timeframe.toMillis)
-    logger.debug("Today is: " + today)
-    logger.debug("Time coeficient: " + ConfigFactory.load().getInt("time.coeficient"))
+    //logger.debug("Today is: " + today)
+    //logger.debug("Time coeficient: " + ConfigFactory.load().getInt("time.coeficient"))
     val c = Calendar.getInstance()
     c.setTimeInMillis(today.getTime)
     c.set(Calendar.HOUR_OF_DAY, today.getHours +
       ConfigFactory.load().getInt("time.coeficient"))
 
     val tillDate = new Date(c.getTimeInMillis)
-    logger.debug("Till Date: " + tillDate)
-
     val beginDate = new Timestamp(c.getTimeInMillis)
     val events = DbSchema.getAllEventsTillDate(tillDate)
 

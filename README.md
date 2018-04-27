@@ -55,6 +55,10 @@ db{
   username = "sa"
   password = ""
 }
+
+time{
+  coeficient = 0
+}
 ```
 
 Reference configuration file is used for deployment at Heroku.
