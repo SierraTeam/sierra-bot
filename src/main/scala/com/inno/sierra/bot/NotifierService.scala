@@ -21,7 +21,7 @@ class NotifierService ()(implicit ec: ExecutionContext) extends LazyLogging {
     val tillDate = new Date(new Date().getTime + timeframe.toMillis)
     val events = DbSchema.getAllEventsTillDate(tillDate)
 
-    //logger.debug("events analyzed till " + tillDate + ": " + events)
+    logger.debug("events analyzed till " + tillDate + ": " + events)
     events.foreach(e => {
       sender ! e
     })
