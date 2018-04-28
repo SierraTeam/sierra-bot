@@ -22,7 +22,15 @@ case class MonthCalendar(monthInYear: Int, year: Int) {
     calendar
   }
   val monthName: String = javaCalendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault)
-  val dayOfWeek: Int = javaCalendar.get(Calendar.DAY_OF_WEEK)
+  val dayOfWeek: Int = javaCalendar.get(Calendar.DAY_OF_WEEK) match {
+    case Calendar.MONDAY => 0
+    case Calendar.TUESDAY => 1
+    case Calendar.WEDNESDAY => 2
+    case Calendar.THURSDAY => 3
+    case Calendar.FRIDAY => 4
+    case Calendar.SATURDAY => 5
+    case Calendar.SUNDAY => 6
+  }
   val daysInMonth: Seq[Int] = {
     val tempCal = makeJavaCalendar(year, monthInYear)
     val dayNumbers = mutable.Buffer[Int]()
