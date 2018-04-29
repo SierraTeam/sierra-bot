@@ -1,5 +1,7 @@
 # Sierra Bot #
 
+The bot is deployed at Heroku and available by its alias @InnoSierraBot.
+
 ## User manual - Functionality ##
 
 This bot is a simple assistant that provides the following functionality:
@@ -26,17 +28,19 @@ To see the list of created events type /myevents. It will display all events sch
 To cancel the event use /cancelevent. It will display all the events you can cancel.  
 Also you can use /cancelevent 1 to cancel the event number 1.  
 
-To see the the instructions type /info
+To see the the instructions type /info.
 
 In order to participate in group events (be accounted when the event is 
-been created and been notified), you need to /subscribe in the group. Later, if you changed 
+been created and been notified about), you need to /subscribe in the group. Later, if you changed 
 your mind, you can /unsubscribe.
 
 In order to facilitate the process of finding the suitable time for everybody, you can use 
-/suggesttime command with the date provided (without the date it will show the result for the current day). Example: /suggesttime 24.04.2018.
+/suggesttime command with the date provided (without the date it will show the result for the current day). The result of the command is the time slots available for all the subscribed users in the current group chat.
 
-(PROTOTYPE - branch "feature/google-calendar", bot does not remember the token yet) You can authorize your Google Calendar account with the bot, so that it could
-check your schedule in Google Calendar as well in order to find suitable time for you. 
+Example: /suggesttime 24.04.2018.
+
+(PROTOTYPE - branch "feature/google-calendar", bot does not remember the token yet) You can authorize your Google Calendar account with the bot using command /sync, so that it could
+check your schedule in Google Calendar (not implemented yet) in order to find suitable time for you. 
 
 ## Build & Run ##
 
@@ -60,6 +64,8 @@ time{
   coeficient = 0
 }
 ```
+
+time.coeficient parameter is used to adjust the time at server, should be zero at local machine.
 
 Reference configuration file is used for deployment at Heroku.
 ```sh
